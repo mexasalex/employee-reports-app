@@ -9,8 +9,7 @@ import autoTable from "jspdf-autotable";
 const AdminPanel = ({ token, onLogout }) => {
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
@@ -47,12 +46,11 @@ const AdminPanel = ({ token, onLogout }) => {
     try {
       await axios.post(
         "http://localhost:5000/admin/create-user",
-        { name, email, password },
+        { username, password }, // Send only username and password
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage("✅ Employee created successfully!");
-      setName("");
-      setEmail("");
+      setUsername("");
       setPassword("");
       fetchUsers();
     } catch (error) {
@@ -104,17 +102,17 @@ const AdminPanel = ({ token, onLogout }) => {
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.text("Employee Reports", 20, 10);
-    
+
     autoTable(doc, {
       head: [["Employee", "Date", "Appointments", "Type", "Equipment", "Materials", "Notes"]],
-      body: reports.map(report => [
-        report.name,
+      body: reports.map((report) => [
+        report.username, // Fetch username instead of name
         report.date,
         report.appointments,
         report.appointment_type,
         report.equipment,
         report.materials,
-        report.notes
+        report.notes,
       ]),
     });
 
@@ -124,40 +122,55 @@ const AdminPanel = ({ token, onLogout }) => {
   return (
     <div className="container mt-4">
       <h2>Admin Panel</h2>
-      <Button variant="danger" onClick={onLogout} className="mb-3">🚪 Logout</Button>
-      
-      {message && <Alert variant={message.startsWith("✅") ? "success" : "danger"}>{message}</Alert>}
+      <Button variant="danger" onClick={onLogout} className="mb-3">
+        🚪 Logout
+      </Button>
+
+      {message && (
+        <Alert variant={message.startsWith("✅") ? "success" : "danger"}>{message}</Alert>
+      )}
 
       <h3>Create Employee</h3>
       <Form onSubmit={createUser} className="mb-4">
         <Form.Group>
-          <Form.Control type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+          <Form.Control
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
         </Form.Group>
         <Form.Group>
-          <Form.Control type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <Form.Control
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
         </Form.Group>
-        <Form.Group>
-          <Form.Control type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </Form.Group>
-        <Button variant="primary" type="submit">➕ Create Employee</Button>
+        <Button variant="primary" type="submit">
+          ➕ Create Employee
+        </Button>
       </Form>
 
       <h3>Employee List</h3>
       <Table striped bordered hover>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Email</th>
+            <th>Username</th> {/* Updated column to show Username */}
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {users.map((user) => (
             <tr key={user.id}>
-              <td>{user.name}</td>
-              <td>{user.email}</td>
+              <td>{user.username}</td> {/* Updated field to display username */}
               <td>
-                <Button variant="danger" size="sm" onClick={() => deleteUser(user.id)}>🗑️ Delete</Button>
+                <Button variant="danger" size="sm" onClick={() => deleteUser(user.id)}>
+                  🗑️ Delete
+                </Button>
               </td>
             </tr>
           ))}
@@ -165,13 +178,20 @@ const AdminPanel = ({ token, onLogout }) => {
       </Table>
 
       <h3>Submitted Reports</h3>
-      <Button variant="secondary" className="mb-2" onClick={sortReports}>🔃 Sort by Date ({sortOrder.toUpperCase()})</Button>
-      <Button variant="success" className="mb-2 me-2" onClick={exportToExcel}>📊 Export to Excel</Button>
-      <Button variant="primary" className="mb-2" onClick={exportToPDF}>📄 Export to PDF</Button>
+      <Button variant="secondary" className="mb-2" onClick={sortReports}>
+        🔃 Sort by Date ({sortOrder.toUpperCase()})
+      </Button>
+      <Button variant="success" className="mb-2 me-2" onClick={exportToExcel}>
+        📊 Export to Excel
+      </Button>
+      <Button variant="primary" className="mb-2" onClick={exportToPDF}>
+        📄 Export to PDF
+      </Button>
+
       <Table striped bordered hover>
         <thead>
           <tr>
-            <th>Employee</th>
+            <th>Username</th> {/* Updated column to show Username */}
             <th>Date</th>
             <th>Appointments</th>
             <th>Type</th>
@@ -184,7 +204,7 @@ const AdminPanel = ({ token, onLogout }) => {
         <tbody>
           {reports.map((report) => (
             <tr key={report.id}>
-              <td>{report.name}</td>
+              <td>{report.username}</td> {/* Fetch username from DB */}
               <td>{report.date}</td>
               <td>{report.appointments}</td>
               <td>{report.appointment_type}</td>
@@ -192,7 +212,9 @@ const AdminPanel = ({ token, onLogout }) => {
               <td>{report.materials}</td>
               <td>{report.notes}</td>
               <td>
-                <Button variant="danger" size="sm" onClick={() => deleteReport(report.id)}>🗑️ Delete</Button>
+                <Button variant="danger" size="sm" onClick={() => deleteReport(report.id)}>
+                  🗑️ Delete
+                </Button>
               </td>
             </tr>
           ))}

@@ -4,7 +4,7 @@ import AdminPanel from "./AdminPanel";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const App = () => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState(null);
   const [role, setRole] = useState("");
@@ -16,11 +16,11 @@ const App = () => {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [message, setMessage] = useState("");
 
-  // ✅ Handle User Login
+  // ✅ Handle User Login (using `username` instead of `email`)
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:5000/login", { email, password });
+      const response = await axios.post("http://localhost:5000/login", { username, password });
       setToken(response.data.token);
       setRole(response.data.role);
       localStorage.setItem("token", response.data.token);
@@ -95,7 +95,7 @@ const App = () => {
         <>
           <h2>🔐 Login</h2>
           <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column" }}>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required style={inputStyle} />
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" required style={inputStyle} />
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required style={inputStyle} />
             <button type="submit" style={buttonStyle}>Login</button>
           </form>

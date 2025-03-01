@@ -31,18 +31,22 @@ app.post("/admin/create-user", authenticateToken, async (req, res) => {
     return res.status(403).json({ error: "Access denied" });
   }
 
-  const { name, email, password } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const { username, password } = req.body; // Remove email
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password are required" });
+  }
 
   try {
-    const newUser = await pool.query(
-      "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, 'employee') RETURNING id",
-      [name, email, hashedPassword]
-    );
-    res.json({ message: "Employee account created", userId: newUser.rows[0].id });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await pool.query("INSERT INTO users (username, password, role) VALUES ($1, $2, 'user')", [
+      username,
+      hashedPassword,
+    ]);
+    res.json({ message: "User created successfully" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Email already exists or database error" });
+    res.status(500).json({ error: "Error creating user" });
   }
 });
 
@@ -53,13 +57,14 @@ app.get("/admin/users", authenticateToken, async (req, res) => {
   }
 
   try {
-    const users = await pool.query("SELECT id, name, email FROM users WHERE role = 'employee'");
+    const users = await pool.query("SELECT id, username FROM users WHERE role = 'user'");
     res.json(users.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Error fetching employees" });
+    res.status(500).json({ error: "Error fetching users" });
   }
 });
+
 
 // ✅ Delete Employee (For Admin Panel)
 app.delete("/admin/delete-user/:id", authenticateToken, async (req, res) => {
@@ -80,22 +85,37 @@ app.delete("/admin/delete-user/:id", authenticateToken, async (req, res) => {
 
 // ✅ Employee Login
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password are required" });
+  }
 
   try {
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (user.rows.length === 0) return res.status(400).json({ error: "User not found" });
+    const user = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+
+    if (user.rows.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
     const validPassword = await bcrypt.compare(password, user.rows[0].password);
-    if (!validPassword) return res.status(400).json({ error: "Invalid password" });
+    if (!validPassword) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
-    const token = jwt.sign({ userId: user.rows[0].id, role: user.rows[0].role }, "your_jwt_secret", { expiresIn: "1h" });
-    res.json({ token, userId: user.rows[0].id, role: user.rows[0].role });
+    const token = jwt.sign(
+      { id: user.rows[0].id, role: user.rows[0].role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.json({ token, role: user.rows[0].role });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Login error" });
   }
 });
+
 
 // ✅ Submit Report (Only for Logged-In Employees)
 // ✅ Submit Report (Updated for multiple materials)
@@ -135,7 +155,7 @@ app.get("/admin/reports", authenticateToken, async (req, res) => {
 
   try {
     const reports = await pool.query(
-      "SELECT reports.id, users.name, reports.date, reports.appointments, reports.appointment_type, reports.equipment, reports.materials, reports.notes FROM reports JOIN users ON reports.user_id = users.id ORDER BY reports.date DESC"
+      "SELECT reports.id, users.username, reports.date, reports.appointments, reports.equipment, reports.materials, reports.notes, reports.appointment_type FROM reports JOIN users ON reports.user_id = users.id ORDER BY reports.date DESC"
     );
     res.json(reports.rows);
   } catch (err) {
@@ -143,6 +163,7 @@ app.get("/admin/reports", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Error fetching reports" });
   }
 });
+
 
 // ✅ Delete a Report (Admin Only)
 app.delete("/admin/delete-report/:id", authenticateToken, async (req, res) => {
