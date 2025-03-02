@@ -104,7 +104,7 @@ const AdminPanel = ({ token, onLogout }) => {
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.text("Employee Reports", 20, 10);
-    
+
     autoTable(doc, {
       head: [["Employee", "Date", "Appointments", "Type", "Equipment", "Materials", "Notes"]],
       body: reports.map(report => [
@@ -125,7 +125,7 @@ const AdminPanel = ({ token, onLogout }) => {
     <div className="container mt-4">
       <h2>Admin Panel</h2>
       <Button variant="danger" onClick={onLogout} className="mb-3">🚪 Logout</Button>
-      
+
       {message && <Alert variant={message.startsWith("✅") ? "success" : "danger"}>{message}</Alert>}
 
       <h3>Create Employee</h3>
@@ -177,6 +177,7 @@ const AdminPanel = ({ token, onLogout }) => {
             <th>Equipment</th>
             <th>Materials</th>
             <th>Notes</th>
+            <th>Attached Files</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -189,6 +190,22 @@ const AdminPanel = ({ token, onLogout }) => {
               <td>{report.equipment}</td>
               <td>{report.materials}</td>
               <td>{report.notes}</td>
+              <td>
+                {report.attachment ? (
+                  report.attachment.endsWith(".mp4") || report.attachment.endsWith(".avi") ? (
+                    <video width="100" controls>
+                      <source src={`http://localhost:5000/uploads/${report.attachment}`} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <a href={`http://localhost:5000/uploads/${report.attachment}`} target="_blank" rel="noopener noreferrer">
+                      <img src={`http://localhost:5000/uploads/${report.attachment}`} alt="Attachment" width="100" />
+                    </a>
+                  )
+                ) : (
+                  "No Attachment"
+                )}
+              </td>
               <td>
                 <Button variant="danger" size="sm" onClick={() => deleteReport(report.id)}>🗑️ Delete</Button>
               </td>

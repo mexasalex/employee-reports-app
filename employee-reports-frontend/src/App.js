@@ -8,13 +8,20 @@ const App = () => {
   const [password, setPassword] = useState("");
   const [token, setToken] = useState(null);
   const [role, setRole] = useState("");
-  const [appointments, setAppointments] = useState("");
   const [appointmentType, setAppointmentType] = useState("");
   const [equipment, setEquipment] = useState("");
   const [materials, setMaterials] = useState([]);
   const [notes, setNotes] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [attachment, setAttachment] = useState(null);
   const [message, setMessage] = useState("");
+
+
+  // ✅ Handle File Upload Change
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setAttachment(file);
+  };
 
   // ✅ Handle User Login
   const handleLogin = async (e) => {
@@ -30,38 +37,42 @@ const App = () => {
     }
   };
 
+ 
+
   // ✅ Handle Report Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("Sending Data:", { date, appointments, appointmentType, equipment, materials, notes });
-
-    if (!appointments || !equipment || materials.length === 0 || !appointmentType) {
+    console.log("Sending Data:", { date, appointmentType, equipment, materials, notes });
+    
+    if (!appointmentType || !equipment || materials.length === 0) {
       setMessage("All fields must be filled out.");
       return;
     }
 
+    const formData = new FormData();
+    formData.append("date", date);
+    formData.append("appointmentType", appointmentType);
+    formData.append("equipment", equipment);
+    formData.append("materials", JSON.stringify(materials));
+    formData.append("notes", notes);
+    if (attachment) {
+      formData.append("attachment", attachment);
+    }
+
     try {
-      await axios.post(
-        "http://localhost:5000/submit-report",
-        {
-          date,
-          appointments,
-          appointmentType,
-          equipment,
-          materials: Array.isArray(materials) ? materials : [materials],
-          notes,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.post("http://localhost:5000/submit-report", formData, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+      });
+
       setMessage("✅ Report submitted successfully!");
-      setAppointments("");
       setAppointmentType("");
       setEquipment("");
       setMaterials([]);
       setNotes("");
+      setAttachment(null);
     } catch (error) {
-      setMessage("❌ Error submitting report. You might have already submitted for today.");
+      setMessage("❌ Error submitting report.");
     }
   };
 
@@ -109,9 +120,6 @@ const App = () => {
             <label>Date:</label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={inputStyle} />
             
-            <label>Appointments:</label>
-            <input type="number" value={appointments} onChange={(e) => setAppointments(e.target.value)} required style={inputStyle} min="1" />
-
             <label>Appointment Type:</label>
             <select value={appointmentType} onChange={(e) => setAppointmentType(e.target.value)} required style={inputStyle}>
               <option value="">Select Appointment Type</option>
@@ -134,6 +142,10 @@ const App = () => {
 
             <label>Notes (Optional):</label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={inputStyle} placeholder="Any additional comments..."></textarea>
+
+            <label>Attachment (Image/Video Only):</label>
+            <input type="file" accept="image/*,video/*" onChange={handleFileChange} />
+
 
             <button type="submit" style={buttonStyle}>📩 Submit Report</button>
           </form>
