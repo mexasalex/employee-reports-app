@@ -16,7 +16,7 @@ const App = () => {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [message, setMessage] = useState("");
 
-  // ✅ Handle User Login (using `username` instead of `email`)
+  // ✅ Handle User Login
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
