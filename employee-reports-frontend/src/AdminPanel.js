@@ -106,7 +106,7 @@ const AdminPanel = ({ token, onLogout }) => {
     doc.text("Employee Reports", 20, 10);
 
     autoTable(doc, {
-      head: [["Employee", "Date", "Appointments", "Type", "Equipment", "Materials", "Notes"]],
+      head: [["Employee", "Date", "Appointments", "Type", "Equipment", "Materials", "Notes", "Attachment"]],
       body: reports.map(report => [
         report.name,
         report.date,
@@ -114,11 +114,40 @@ const AdminPanel = ({ token, onLogout }) => {
         report.appointment_type,
         report.equipment,
         report.materials,
-        report.notes
+        report.notes,
+        report.attachment ? `http://localhost:5000/uploads/${report.attachment}` : "No Attachment",
       ]),
     });
 
+    // If the attachment is an image, attempt to add it to the PDF
+    reports.forEach((report, index) => {
+      if (report.attachment && /\.(jpg|jpeg|png)$/i.test(report.attachment)) {
+        const img = new Image();
+        img.src = `http://localhost:5000/uploads/${report.attachment}`;
+        img.onload = function () {
+          doc.addImage(img, "JPEG", 15, doc.lastAutoTable.finalY + 10, 40, 20);
+          doc.save("Employee_Reports.pdf");
+        };
+      }
+    });
+
     doc.save("Employee_Reports.pdf");
+  };
+
+  const tableStyle = {
+    wordWrap: "break-word",   // Allow breaking long words
+    whiteSpace: "normal",     // Allow wrapping inside cells
+    maxWidth: "200px",        // Limit column width for better readability
+    overflow: "hidden",       // Prevent excessive overflow
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", { // "en-GB" formats as "DD/MM/YYYY"
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
   return (
@@ -171,25 +200,25 @@ const AdminPanel = ({ token, onLogout }) => {
       <Table striped bordered hover>
         <thead>
           <tr>
-            <th>Employee</th>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Equipment</th>
-            <th>Materials</th>
-            <th>Notes</th>
-            <th>Attached Files</th>
-            <th>Action</th>
+            <th style={tableStyle}>Employee</th>
+            <th style={tableStyle}>Date</th>
+            <th style={tableStyle}>Type</th>
+            <th style={tableStyle}>Equipment</th>
+            <th style={tableStyle}>Materials</th>
+            <th style={tableStyle}>Notes</th>
+            <th style={tableStyle}>Attachment</th>
+            <th style={tableStyle}>Action</th>
           </tr>
         </thead>
         <tbody>
           {reports.map((report) => (
             <tr key={report.id}>
-              <td>{report.name}</td>
-              <td>{report.date}</td>
-              <td>{report.appointment_type}</td>
-              <td>{report.equipment}</td>
-              <td>{report.materials}</td>
-              <td>{report.notes}</td>
+              <td style={tableStyle}>{report.name}</td>
+              <td style={tableStyle}>{formatDate(report.date)}</td>
+              <td style={tableStyle}>{report.appointment_type}</td>
+              <td style={tableStyle}>{report.equipment}</td>
+              <td style={tableStyle}>{report.materials}</td>
+              <td style={tableStyle}>{report.notes}</td>
               <td>
                 {report.attachment ? (
                   report.attachment.endsWith(".mp4") || report.attachment.endsWith(".avi") ? (
