@@ -212,7 +212,7 @@ const App = () => {
     <Container fluid className="p-4">
       {!token ? (
         <Row className="justify-content-center">
-          <Col md={6}>
+          <Col md={2}>
             <Card>
               <Card.Body>
                 <h2 className="text-center mb-4">🔐 Login</h2>
@@ -235,7 +235,7 @@ const App = () => {
                       required
                     />
                   </Form.Group>
-                  <Button variant="primary" type="submit" className="w-100">
+                  <Button variant="primary" type="submit" className="w-25 mx-auto d-block mt-3">
                     Login
                   </Button>
                 </Form>
@@ -247,7 +247,7 @@ const App = () => {
         <AdminPanel token={token} onLogout={handleLogout} />
       ) : (
         <Row className="justify-content-center">
-          <Col md={8}>
+          <Col md={5}>
             <Card>
               <Card.Body>
                 <h2 className="text-center mb-4">📋 Submit Daily Report</h2>
@@ -394,12 +394,12 @@ const App = () => {
                     <Form.Control type="file" accept="image/*,video/*" onChange={handleFileChange} />
                   </Form.Group>
 
-                  <Button variant="primary" type="submit" className="w-100">
+                  <Button variant="primary" type="submit" className="w-25 mx-auto d-block mt-3">
                     📩 Submit Report
                   </Button>
                 </Form>
 
-                <Button variant="danger" onClick={handleLogout} className="w-100 mt-3">
+                <Button variant="danger" onClick={handleLogout} className="w-25 mx-auto d-block mt-3">
                   🚪 Logout
                 </Button>
               </Card.Body>
