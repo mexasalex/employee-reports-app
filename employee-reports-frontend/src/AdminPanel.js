@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Table, Button, Form, Alert } from "react-bootstrap";
-import * as XLSX from "xlsx";
+//import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -130,12 +130,12 @@ const AdminPanel = ({ token, onLogout }) => {
   };
 
   // Export reports to Excel
-  const exportToExcel = () => {
+  /*const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(reports);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Reports");
     XLSX.writeFile(workbook, "Employee_Reports.xlsx");
-  };
+  };*/
 
   // Format date to "DD/MM/YYYY"
   const formatDate = (dateString) => {
@@ -427,9 +427,6 @@ const AdminPanel = ({ token, onLogout }) => {
 
       <Button variant="secondary" className="mb-2" onClick={sortReports}>
         🔃 Sort by Date ({sortOrder.toUpperCase()})
-      </Button>
-      <Button variant="success" className="mb-2 me-2" onClick={exportToExcel}>
-        📊 Export to Excel
       </Button>
       <Button variant="primary" className="mb-2" onClick={exportToPDF}>
         📄 Export to PDF
