@@ -138,12 +138,12 @@ app.post("/submit-report", authenticateToken, upload.single("attachment"), async
   console.log("File Upload Debugging:");
   console.log("File Object:", req.file);
 
-  const { date, address, appointmentType, includeRouter, routerSerial, includeONT, ontSerial, inesLength, prizakia, spiralMeters, notes } = req.body;
+  const { date, address, appointmentType, includeRouter, routerSerial, includeONT, ontSerial, includeSpiralMeters, spiralMeters, inesLength, prizakia, notes } = req.body;
   const userId = req.user.userId;
   const attachment = req.file ? req.file.filename : null;
 
-  // Required fields validation (excluding routerSerial and ontSerial)
-  if (!date || !address || !appointmentType || !inesLength || !prizakia || !spiralMeters) {
+  // Required fields validation (excluding routerSerial, ontSerial, and spiralMeters)
+  if (!date || !address || !appointmentType || !inesLength || !prizakia) {
     return res.status(400).json({ error: "All fields are required." });
   }
 
@@ -156,6 +156,12 @@ app.post("/submit-report", authenticateToken, upload.single("attachment"), async
   if (includeONT === "true" && !ontSerial) {
     return res.status(400).json({ error: "ONT Serial Number is required." });
   }
+
+  // If Spiral Meters is included, ensure the value is provided and valid
+  if (includeSpiralMeters === "true" && !spiralMeters) {
+    return res.status(400).json({ error: "Spiral Number is required." });
+  }
+
 
   console.log("Received Data:", { date, address, appointmentType, routerSerial, ontSerial, inesLength, prizakia, spiralMeters, notes, attachment });
 
@@ -174,7 +180,7 @@ app.post("/submit-report", authenticateToken, upload.single("attachment"), async
         includeONT === "true" ? ontSerial : null, // Include ONT serial only if checkbox is checked
         inesLength,
         prizakia,
-        spiralMeters,
+        includeSpiralMeters === "true" ? spiralMeters : null, // Include Spiral Meters only if checkbox is checked
         notes,
         attachment,
       ]

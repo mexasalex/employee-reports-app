@@ -22,6 +22,7 @@ const App = () => {
   const [message, setMessage] = useState("");
   const [includeRouter, setIncludeRouter] = useState(false);
   const [includeONT, setIncludeONT] = useState(false);
+  const [includeSpiralMeters, setIncludeSpiralMeters] = useState(false);
 
   const checkTokenExpiration = () => {
     const token = localStorage.getItem("token");
@@ -70,8 +71,8 @@ const App = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Required fields validation
-    if (!date || !address || !appointmentType || !inesLength || !prizakia || !spiralMeters) {
+    // Required fields validation (excluding routerSerial, ontSerial, and spiralMeters)
+    if (!date || !address || !appointmentType || !inesLength || !prizakia) {
       setMessage("All fields are required.");
       return;
     }
@@ -86,6 +87,12 @@ const App = () => {
     if (includeONT && !ontSerial) {
       setMessage("ONT Serial Number is required.");
       return;
+    }
+
+    // If Spiral Meters is included, ensure the value is provided and valid
+    if (includeSpiralMeters && !spiralMeters) {
+      setMessage("Sprial is required.");
+        return;
     }
 
     // Date validation (ensure date is not in the future)
@@ -111,11 +118,11 @@ const App = () => {
     }
 
     // Spiral Meters validation
-    const spiralMetersNumber = parseFloat(spiralMeters);
+    /*const spiralMetersNumber = parseFloat(spiralMeters);
     if (isNaN(spiralMetersNumber) || spiralMetersNumber < 1 || spiralMetersNumber > 100) {
       setMessage("Spiral Meters must be a number between 1 and 100.");
       return;
-    }
+    }*/
 
     // Attachment validation (if provided)
     if (attachment) {
@@ -126,7 +133,7 @@ const App = () => {
       }
     }
 
-    // If all validations pass, submit the form
+    // Prepare form data
     const formData = new FormData();
     formData.append("date", date);
     formData.append("address", address);
@@ -139,9 +146,12 @@ const App = () => {
     if (includeONT) {
       formData.append("ontSerial", ontSerial); // Add ONT serial number only if included
     }
+    formData.append("includeSpiralMeters", includeSpiralMeters); // Add whether Spiral Meters is included
+    if (includeSpiralMeters) {
+      formData.append("spiralMeters", spiralMeters); // Add Spiral Meters only if included
+    }
     formData.append("inesLength", inesLength);
     formData.append("prizakia", prizakia);
-    formData.append("spiralMeters", spiralMeters);
     formData.append("notes", notes);
     if (attachment) {
       formData.append("attachment", attachment);
@@ -160,9 +170,10 @@ const App = () => {
       setRouterSerial(""); // Reset the router serial number
       setIncludeONT(false); // Reset the ONT checkbox
       setOntSerial(""); // Reset the ONT serial number
+      setIncludeSpiralMeters(false); // Reset the Spiral Meters checkbox
+      setSpiralMeters(""); // Reset the Spiral Meters value
       setInesLength("");
       setPrizakia("");
-      setSpiralMeters("");
       setNotes("");
       setAttachment(null);
     } catch (error) {
@@ -278,6 +289,8 @@ const App = () => {
               <option value="">Select Length</option>
               <option value="10m">10m</option>
               <option value="20m">20m</option>
+              <option value="30m">30m</option>
+              <option value="40m">40m</option>
             </select>
 
             <label>🏠 Prizakia:</label>
@@ -287,8 +300,27 @@ const App = () => {
               <option value="Oto Classic">Oto Classic</option>
             </select>
 
-            <label>🔄 Spiral Meters:</label>
-            <input type="number" value={spiralMeters} onChange={(e) => setSpiralMeters(e.target.value)} />
+            <label>
+              <input
+                type="checkbox"
+                checked={includeSpiralMeters}
+                onChange={(e) => setIncludeSpiralMeters(e.target.checked)}
+              />
+              Include Spiral Meters
+            </label>
+
+            {includeSpiralMeters && (
+              <>
+                <label>Spiral Meters:</label>
+                <input
+                  type="number"
+                  value={spiralMeters}
+                  onChange={(e) => setSpiralMeters(e.target.value)}
+                  required={includeSpiralMeters} // Make it required only if the checkbox is checked
+                  style={inputStyle}
+                />
+              </>
+            )}
 
 
             <label>Notes (Optional):</label>
