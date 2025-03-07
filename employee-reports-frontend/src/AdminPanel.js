@@ -13,35 +13,49 @@ const AdminPanel = ({ token, onLogout }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [filterAppointmentType, setFilterAppointmentType] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
 
+
   useEffect(() => {
-    fetchUsers();
+    const fetchReports = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/admin/reports", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setReports(response.data);
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+      }
+    };
+
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/admin/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUsers(response.data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+
     fetchReports();
-  }, [token]);
+    fetchUsers();
+  }, [token]); // Only `token` is included in the dependency array
 
-  const fetchUsers = async () => {
+  const fetchUsersUpdateOnClick= async () => {
     try {
-      const res = await axios.get("http://localhost:5000/admin/users", {
+      const response = await axios.get("http://localhost:5000/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUsers(res.data);
-    } catch (err) {
-      console.error("Error fetching employees:", err);
+      setUsers(response.data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
     }
   };
 
-  const fetchReports = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/admin/reports", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setReports(res.data);
-    } catch (err) {
-      console.error("Error fetching reports:", err);
-    }
-  };
-
+  // Create a new user
   const createUser = async (e) => {
     e.preventDefault();
     try {
@@ -54,12 +68,13 @@ const AdminPanel = ({ token, onLogout }) => {
       setName("");
       setUsername("");
       setPassword("");
-      fetchUsers();
+      fetchUsersUpdateOnClick();
     } catch (error) {
       setMessage("❌ Error creating employee.");
     }
   };
 
+  // Delete a user
   const deleteUser = async (id) => {
     try {
       await axios.delete(`http://localhost:5000/admin/delete-user/${id}`, {
@@ -72,6 +87,7 @@ const AdminPanel = ({ token, onLogout }) => {
     }
   };
 
+  // Delete a report
   const deleteReport = async (id) => {
     try {
       await axios.delete(`http://localhost:5000/admin/delete-report/${id}`, {
@@ -84,6 +100,7 @@ const AdminPanel = ({ token, onLogout }) => {
     }
   };
 
+  // Sort reports by date
   const sortReports = () => {
     const sortedReports = [...reports].sort((a, b) => {
       return sortOrder === "asc"
@@ -94,6 +111,7 @@ const AdminPanel = ({ token, onLogout }) => {
     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
   };
 
+  // Export reports to Excel
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(reports);
     const workbook = XLSX.utils.book_new();
@@ -101,22 +119,24 @@ const AdminPanel = ({ token, onLogout }) => {
     XLSX.writeFile(workbook, "Employee_Reports.xlsx");
   };
 
+  // Format date to "DD/MM/YYYY"
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-GB", { // "en-GB" formats as "DD/MM/YYYY"
+    return date.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     });
   };
 
+  // Export reports to PDF
   const exportToPDF = () => {
     const doc = new jsPDF();
-  
+
     // Set the title
     doc.setFontSize(18);
     doc.text("Employee Reports", 14, 20);
-  
+
     // Define the table headers and data
     autoTable(doc, {
       startY: 25, // Start table below the title
@@ -180,33 +200,60 @@ const AdminPanel = ({ token, onLogout }) => {
     doc.save("Employee_Reports.pdf");
   };
 
-  const tableStyle = {
-    wordWrap: "break-word",   // Allow breaking long words
-    whiteSpace: "normal",     // Allow wrapping inside cells
-    maxWidth: "200px",        // Limit column width for better readability
-    overflow: "hidden",       // Prevent excessive overflow
-  };
+  // Filter reports by appointment type
+  const filteredReports = filterAppointmentType
+    ? reports.filter((report) => report.appointment_type === filterAppointmentType)
+    : reports;
 
+  // Table style for better readability
+  const tableStyle = {
+    wordWrap: "break-word", // Allow breaking long words
+    whiteSpace: "normal", // Allow wrapping inside cells
+    maxWidth: "200px", // Limit column width for better readability
+    overflow: "hidden", // Prevent excessive overflow
+  };
 
   return (
     <div className="container mt-4">
       <h2>Admin Panel</h2>
-      <Button variant="danger" onClick={onLogout} className="mb-3">🚪 Logout</Button>
+      <Button variant="danger" onClick={onLogout} className="mb-3">
+        🚪 Logout
+      </Button>
 
       {message && <Alert variant={message.startsWith("✅") ? "success" : "danger"}>{message}</Alert>}
 
       <h3>Create Employee</h3>
       <Form onSubmit={createUser} className="mb-4">
         <Form.Group>
-          <Form.Control type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+          <Form.Control
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
         </Form.Group>
         <Form.Group>
-          <Form.Control type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+          <Form.Control
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
         </Form.Group>
         <Form.Group>
-          <Form.Control type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <Form.Control
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
         </Form.Group>
-        <Button variant="primary" type="submit">➕ Create Employee</Button>
+        <Button variant="primary" type="submit">
+          ➕ Create Employee
+        </Button>
       </Form>
 
       <h3>Employee List</h3>
@@ -224,7 +271,9 @@ const AdminPanel = ({ token, onLogout }) => {
               <td>{user.name}</td>
               <td>{user.username}</td>
               <td>
-                <Button variant="danger" size="sm" onClick={() => deleteUser(user.id)}>🗑️ Delete</Button>
+                <Button variant="danger" size="sm" onClick={() => deleteUser(user.id)}>
+                  🗑️ Delete
+                </Button>
               </td>
             </tr>
           ))}
@@ -232,9 +281,35 @@ const AdminPanel = ({ token, onLogout }) => {
       </Table>
 
       <h3>Submitted Reports</h3>
-      <Button variant="secondary" className="mb-2" onClick={sortReports}>🔃 Sort by Date ({sortOrder.toUpperCase()})</Button>
-      <Button variant="success" className="mb-2 me-2" onClick={exportToExcel}>📊 Export to Excel</Button>
-      <Button variant="primary" className="mb-2" onClick={exportToPDF}>📄 Export to PDF</Button>
+      <div className="mb-3">
+        <Form.Group>
+          <Form.Label>Filter by Appointment Type:</Form.Label>
+          <Form.Control
+            as="select"
+            value={filterAppointmentType}
+            onChange={(e) => setFilterAppointmentType(e.target.value)}
+          >
+            <option value="">All</option>
+            <option value="ΟΛΟΚΛΗΡΩΜΕΝΟ">ΟΛΟΚΛΗΡΩΜΕΝΟ</option>
+            <option value="ΚΑΤΑΣΚΕΥΗ">ΚΑΤΑΣΚΕΥΗ</option>
+            <option value="ΕΝΕΡΓΟΠΟΙΗΣΗ">ΕΝΕΡΓΟΠΟΙΗΣΗ</option>
+            <option value="ΣΠΙΡΑΛ">ΣΠΙΡΑΛ</option>
+            <option value="BEP-OTO">BEP-OTO</option>
+          </Form.Control>
+        </Form.Group>
+      </div>
+      <div className="mb-3">
+        <strong>Total Appointments:</strong> {filteredReports.length}
+      </div>
+      <Button variant="secondary" className="mb-2" onClick={sortReports}>
+        🔃 Sort by Date ({sortOrder.toUpperCase()})
+      </Button>
+      <Button variant="success" className="mb-2 me-2" onClick={exportToExcel}>
+        📊 Export to Excel
+      </Button>
+      <Button variant="primary" className="mb-2" onClick={exportToPDF}>
+        📄 Export to PDF
+      </Button>
       <Table striped bordered hover>
         <thead>
           <tr>
@@ -244,6 +319,7 @@ const AdminPanel = ({ token, onLogout }) => {
             <th style={tableStyle}>Type</th>
             <th style={tableStyle}>Router Serial</th>
             <th style={tableStyle}>ONT Serial</th>
+            <th style={tableStyle}>Ines Lenght</th>
             <th style={tableStyle}>Prizakia</th>
             <th style={tableStyle}>Spiral (m)</th>
             <th style={tableStyle}>Notes</th>
@@ -252,7 +328,7 @@ const AdminPanel = ({ token, onLogout }) => {
           </tr>
         </thead>
         <tbody>
-          {reports.map((report) => (
+          {filteredReports.map((report) => (
             <tr key={report.id}>
               <td style={tableStyle}>{report.name}</td>
               <td style={tableStyle}>{formatDate(report.date)}</td>
@@ -281,7 +357,9 @@ const AdminPanel = ({ token, onLogout }) => {
                 )}
               </td>
               <td>
-                <Button variant="danger" size="sm" onClick={() => deleteReport(report.id)}>🗑️ Delete</Button>
+                <Button variant="danger" size="sm" onClick={() => deleteReport(report.id)}>
+                  🗑️ Delete
+                </Button>
               </td>
             </tr>
           ))}
