@@ -26,6 +26,8 @@ const AdminPanel = ({ token, onLogout }) => {
   const [totalOtoClassic, setTotalOtoClassic] = useState(0);
   const [totalRouters, setTotalRouters] = useState(0);
   const [totalONT, setTotalONT] = useState(0);
+  const [showCreateEmployeeForm, setShowCreateEmployeeForm] = useState(false);
+  const [showEmployeeList, setShowEmployeeList] = useState(false);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -381,6 +383,24 @@ const AdminPanel = ({ token, onLogout }) => {
         </Col>
       </Row>
 
+      <Row className="mb-4">
+        <Col>
+          <Button
+            variant="primary"
+            onClick={() => setShowCreateEmployeeForm(!showCreateEmployeeForm)}
+            className="me-2"
+          >
+            {showCreateEmployeeForm ? "Hide Create Employee Form" : "Show Create Employee Form"}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setShowEmployeeList(!showEmployeeList)}
+          >
+            {showEmployeeList ? "Hide Employee List" : "Show Employee List"}
+          </Button>
+        </Col>
+      </Row>
+
       {message && (
         <Row className="mb-4">
           <Col>
@@ -389,80 +409,82 @@ const AdminPanel = ({ token, onLogout }) => {
         </Row>
       )}
 
-      <Row className="mb-4">
-        <Col>
-          <Card>
-            <Card.Body>
-              <h3 className="mb-3">Create Employee</h3>
-              <Form onSubmit={createUser}>
-                <Form.Group className="mb-3">
-                  <Form.Control
-                    type="text"
-                    placeholder="Name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Control
-                    type="text"
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                  />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Control
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </Form.Group>
-                <Button variant="primary" type="submit">
-                  ➕ Create Employee
-                </Button>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row className="mb-4">
-        <Col>
-          <Card>
-            <Card.Body>
-              <h3 className="mb-3">Employee List</h3>
-              <Table striped bordered hover>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Username</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td>{user.name}</td>
-                      <td>{user.username}</td>
-                      <td>
-                        <Button variant="danger" size="sm" onClick={() => deleteUser(user.id)}>
-                          🗑️ Delete
-                        </Button>
-                      </td>
+      {showCreateEmployeeForm && (
+        <Row className="mb-4">
+          <Col>
+            <Card>
+              <Card.Body>
+                <h3 className="mb-3">Create Employee</h3>
+                <Form onSubmit={createUser}>
+                  <Form.Group className="mb-3">
+                    <Form.Control
+                      type="text"
+                      placeholder="Name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Control
+                      type="text"
+                      placeholder="Username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Control
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </Form.Group>
+                  <Button variant="primary" type="submit">
+                    ➕ Create Employee
+                  </Button>
+                </Form>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+      {showEmployeeList && (
+        <Row className="mb-4">
+          <Col>
+            <Card>
+              <Card.Body>
+                <h3 className="mb-3">Employee List</h3>
+                <Table striped bordered hover>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Username</th>
+                      <th>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id}>
+                        <td>{user.name}</td>
+                        <td>{user.username}</td>
+                        <td>
+                          <Button variant="danger" size="sm" onClick={() => deleteUser(user.id)}>
+                            🗑️ Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
       <Row className="mb-4">
         <Col>
           <Card>
