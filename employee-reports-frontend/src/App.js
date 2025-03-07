@@ -21,6 +21,7 @@ const App = () => {
   const [attachment, setAttachment] = useState(null);
   const [message, setMessage] = useState("");
   const [includeRouter, setIncludeRouter] = useState(false);
+  const [includeONT, setIncludeONT] = useState(false);
 
   const checkTokenExpiration = () => {
     const token = localStorage.getItem("token");
@@ -70,7 +71,7 @@ const App = () => {
     e.preventDefault();
 
     // Required fields validation
-    if (!date || !address || !appointmentType || !ontSerial || !inesLength || !prizakia || !spiralMeters) {
+    if (!date || !address || !appointmentType || !inesLength || !prizakia || !spiralMeters) {
       setMessage("All fields are required.");
       return;
     }
@@ -78,6 +79,12 @@ const App = () => {
     // If router is included, ensure the serial number is provided
     if (includeRouter && !routerSerial) {
       setMessage("Router Serial Number is required.");
+      return;
+    }
+
+    // If ONT is included, ensure the serial number is provided
+    if (includeONT && !ontSerial) {
+      setMessage("ONT Serial Number is required.");
       return;
     }
 
@@ -128,7 +135,10 @@ const App = () => {
     if (includeRouter) {
       formData.append("routerSerial", routerSerial); // Add router serial number only if included
     }
-    formData.append("ontSerial", ontSerial);
+    formData.append("includeONT", includeONT); // Add whether ONT is included
+    if (includeONT) {
+      formData.append("ontSerial", ontSerial); // Add ONT serial number only if included
+    }
     formData.append("inesLength", inesLength);
     formData.append("prizakia", prizakia);
     formData.append("spiralMeters", spiralMeters);
@@ -146,9 +156,10 @@ const App = () => {
       // Reset form fields
       setAddress("");
       setAppointmentType("");
-      setIncludeRouter(false); // Reset the checkbox
-      setRouterSerial(""); // Reset the serial number
-      setOntSerial("");
+      setIncludeRouter(false); // Reset the router checkbox
+      setRouterSerial(""); // Reset the router serial number
+      setIncludeONT(false); // Reset the ONT checkbox
+      setOntSerial(""); // Reset the ONT serial number
       setInesLength("");
       setPrizakia("");
       setSpiralMeters("");
@@ -240,8 +251,27 @@ const App = () => {
               </>
             )}
 
-            <label>🌐 ONT Serial Number:</label>
-            <input type="text" value={ontSerial} onChange={(e) => setOntSerial(e.target.value)} />
+            <label>
+              <input
+                type="checkbox"
+                checked={includeONT}
+                onChange={(e) => setIncludeONT(e.target.checked)}
+              />
+              Include ONT
+            </label>
+
+            {includeONT && (
+              <>
+                <label>ONT Serial Number:</label>
+                <input
+                  type="text"
+                  value={ontSerial}
+                  onChange={(e) => setOntSerial(e.target.value)}
+                  required={includeONT} // Make it required only if the checkbox is checked
+                  style={inputStyle}
+                />
+              </>
+            )}
 
             <label>🔌 INES Length:</label>
             <select value={inesLength} onChange={(e) => setInesLength(e.target.value)}>
