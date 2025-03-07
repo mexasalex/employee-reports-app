@@ -5,6 +5,8 @@ import { Table, Button, Form, Alert, Card, Container, Row, Col } from "react-boo
 //import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const AdminPanel = ({ token, onLogout }) => {
   const [users, setUsers] = useState([]);
@@ -14,8 +16,8 @@ const AdminPanel = ({ token, onLogout }) => {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [filterAppointmentType, setFilterAppointmentType] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [dateRange, setDateRange] = useState([null, null]);
+  const [startDate, endDate] = dateRange;
   const [filterEmployee, setFilterEmployee] = useState("");
   const [filterAddress, setFilterAddress] = useState("");
   const [filterEquipment, setFilterEquipment] = useState("");
@@ -513,19 +515,16 @@ const AdminPanel = ({ token, onLogout }) => {
                   </Form.Group>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>Date Range:</Form.Label>
-                    <div className="d-flex gap-2">
-                      <Form.Control
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                      />
-                      <Form.Control
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                      />
-                    </div>
+                    <Form.Label>Date Range: &nbsp;</Form.Label>
+                    <DatePicker
+                      selectsRange={true}
+                      startDate={startDate}
+                      endDate={endDate}
+                      onChange={(update) => setDateRange(update)}
+                      isClearable={true}
+                      placeholderText="Select a date range"
+                      className="form-control"
+                    />
                   </Form.Group>
 
                   <Form.Group className="mb-3">
@@ -572,8 +571,7 @@ const AdminPanel = ({ token, onLogout }) => {
                     className="mb-3"
                     onClick={() => {
                       setFilterAppointmentType("");
-                      setStartDate("");
-                      setEndDate("");
+                      setDateRange([null, null]);
                       setFilterEmployee("");
                       setFilterAddress("");
                       setFilterEquipment("");
@@ -623,68 +621,68 @@ const AdminPanel = ({ token, onLogout }) => {
                 </Form.Control>
               </Form.Group>
               <div className="table-responsive" style={{ overflowX: "auto" }}>
-              <Table striped bordered hover>
-                <thead>
-                  <tr>
-                    <th>Employee</th>
-                    <th>Date</th>
-                    <th>Address</th>
-                    <th>Type</th>
-                    <th>Router Serial</th>
-                    <th>ONT Serial</th>
-                    <th>Ines (m)</th>
-                    <th>Prizakia</th>
-                    <th>Spiral (m)</th>
-                    <th>Notes</th>
-                    <th>Attachment</th>
-                    <th>Created At</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {limitedReports.map((report) => (
-                    <tr key={report.id}>
-                      <td>{report.name}</td>
-                      <td>{formatDate(report.date)}</td>
-                      <td>{report.address}</td>
-                      <td>{report.appointment_type}</td>
-                      <td>{report.router_serial}</td>
-                      <td>{report.ont_serial}</td>
-                      <td>{report.ines_length}</td>
-                      <td>{report.prizakia}</td>
-                      <td>{report.spiral_meters}</td>
-                      <td>{report.notes}</td>
-                      <td>
-                        {report.attachment ? (
-                          report.attachment.endsWith(".mp4") || report.attachment.endsWith(".avi") ? (
-                            <video width="100" controls>
-                              <source src={`http://localhost:5000/uploads/${report.attachment}`} type="video/mp4" />
-                              Your browser does not support the video tag.
-                            </video>
-                          ) : (
-                            <a href={`http://localhost:5000/uploads/${report.attachment}`} target="_blank" rel="noopener noreferrer">
-                              <img src={`http://localhost:5000/uploads/${report.attachment}`} alt="Attachment" width="100" />
-                            </a>
-                          )
-                        ) : (
-                          "No Attachment"
-                        )}
-                      </td>
-                      <td>{formatDateForCreatedAt(report.created_at)}</td>
-                      <td>
-                        <Button variant="danger" size="sm" onClick={() => deleteReport(report.id)}>
-                          🗑️ Delete
-                        </Button>
-                      </td>
+                <Table striped bordered hover>
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Date</th>
+                      <th>Address</th>
+                      <th>Type</th>
+                      <th>Router Serial</th>
+                      <th>ONT Serial</th>
+                      <th>Ines (m)</th>
+                      <th>Prizakia</th>
+                      <th>Spiral (m)</th>
+                      <th>Notes</th>
+                      <th>Attachment</th>
+                      <th>Created At</th>
+                      <th>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
-          </Card.Body>
-        </Card>
-      </Col>
-    </Row>
+                  </thead>
+                  <tbody>
+                    {limitedReports.map((report) => (
+                      <tr key={report.id}>
+                        <td>{report.name}</td>
+                        <td>{formatDate(report.date)}</td>
+                        <td>{report.address}</td>
+                        <td>{report.appointment_type}</td>
+                        <td>{report.router_serial}</td>
+                        <td>{report.ont_serial}</td>
+                        <td>{report.ines_length}</td>
+                        <td>{report.prizakia}</td>
+                        <td>{report.spiral_meters}</td>
+                        <td>{report.notes}</td>
+                        <td>
+                          {report.attachment ? (
+                            report.attachment.endsWith(".mp4") || report.attachment.endsWith(".avi") ? (
+                              <video width="100" controls>
+                                <source src={`http://localhost:5000/uploads/${report.attachment}`} type="video/mp4" />
+                                Your browser does not support the video tag.
+                              </video>
+                            ) : (
+                              <a href={`http://localhost:5000/uploads/${report.attachment}`} target="_blank" rel="noopener noreferrer">
+                                <img src={`http://localhost:5000/uploads/${report.attachment}`} alt="Attachment" width="100" />
+                              </a>
+                            )
+                          ) : (
+                            "No Attachment"
+                          )}
+                        </td>
+                        <td>{formatDateForCreatedAt(report.created_at)}</td>
+                        <td>
+                          <Button variant="danger" size="sm" onClick={() => deleteReport(report.id)}>
+                            🗑️ Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
     </Container >
   );
 };
