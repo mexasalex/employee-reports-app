@@ -138,9 +138,19 @@ app.post("/submit-report", authenticateToken, upload.single("attachment"), async
   console.log("File Upload Debugging:");
   console.log("File Object:", req.file);
 
-  const { date, address, appointmentType, routerSerial, ontSerial, inesLength, prizakia, spiralMeters, notes } = req.body;
+  const { date, address, appointmentType, includeRouter, routerSerial, ontSerial, inesLength, prizakia, spiralMeters, notes } = req.body;
   const userId = req.user.userId;
   const attachment = req.file ? req.file.filename : null;
+
+  // Required fields validation (excluding routerSerial)
+  if (!date || !address || !appointmentType || !ontSerial || !inesLength || !prizakia || !spiralMeters) {
+    return res.status(400).json({ error: "All fields are required." });
+  }
+
+  // If router is included, ensure the serial number is provided
+  if (includeRouter === "true" && !routerSerial) {
+    return res.status(400).json({ error: "Router Serial Number is required." });
+  }
 
   console.log("Received Data:", { date, address, appointmentType, routerSerial, ontSerial, inesLength, prizakia, spiralMeters, notes, attachment });
 
@@ -150,12 +160,24 @@ app.post("/submit-report", authenticateToken, upload.single("attachment"), async
        (user_id, date, address, appointment_type, router_serial, ont_serial, ines_length, prizakia, spiral_meters, notes, attachment) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
        RETURNING *`,
-      [userId, date, address, appointmentType, routerSerial, ontSerial, inesLength, prizakia, spiralMeters, notes, attachment]
+      [
+        userId,
+        date,
+        address,
+        appointmentType,
+        includeRouter === "true" ? routerSerial : null, // Include router serial only if checkbox is checked
+        ontSerial,
+        inesLength,
+        prizakia,
+        spiralMeters,
+        notes,
+        attachment,
+      ]
     );
     res.json(newReport.rows[0]);
   } catch (err) {
     console.error("Database Error:", err);
-    res.status(500).json({ error: "Error submitting report" });
+    res.status(500).json({ error: "Error submitting report." });
   }
 });
 

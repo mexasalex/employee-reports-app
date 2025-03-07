@@ -20,6 +20,7 @@ const App = () => {
   const [notes, setNotes] = useState("");
   const [attachment, setAttachment] = useState(null);
   const [message, setMessage] = useState("");
+  const [includeRouter, setIncludeRouter] = useState(false);
 
   const checkTokenExpiration = () => {
     const token = localStorage.getItem("token");
@@ -67,36 +68,86 @@ const App = () => {
   // ✅ Handle Report Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    if (!appointmentType || !date || !address) {
-      setMessage("All fields must be filled out.");
+
+    // Required fields validation
+    if (!date || !address || !appointmentType || !ontSerial || !inesLength || !prizakia || !spiralMeters) {
+      setMessage("All fields are required.");
       return;
     }
-  
+
+    // If router is included, ensure the serial number is provided
+    if (includeRouter && !routerSerial) {
+      setMessage("Router Serial Number is required.");
+      return;
+    }
+
+    // Date validation (ensure date is not in the future)
+    const selectedDate = new Date(date);
+    const currentDate = new Date();
+    if (selectedDate > currentDate) {
+      setMessage("Date cannot be in the future.");
+      return;
+    }
+
+    // INES Length validation
+    const allowedInesLengths = ["10m", "20m"];
+    if (!allowedInesLengths.includes(inesLength)) {
+      setMessage("Invalid INES Length. Allowed values are 10m or 20m.");
+      return;
+    }
+
+    // Prizakia validation
+    const allowedPrizakia = ["Oto Huawei", "Oto Classic"];
+    if (!allowedPrizakia.includes(prizakia)) {
+      setMessage("Invalid Prizakia. Allowed values are Oto Huawei or Oto Classic.");
+      return;
+    }
+
+    // Spiral Meters validation
+    const spiralMetersNumber = parseFloat(spiralMeters);
+    if (isNaN(spiralMetersNumber) || spiralMetersNumber < 1 || spiralMetersNumber > 100) {
+      setMessage("Spiral Meters must be a number between 1 and 100.");
+      return;
+    }
+
+    // Attachment validation (if provided)
+    if (attachment) {
+      const allowedFileTypes = ["image/jpeg", "image/png", "video/mp4"];
+      if (!allowedFileTypes.includes(attachment.type)) {
+        setMessage("Invalid file type. Only images (JPEG, PNG) and videos (MP4) are allowed.");
+        return;
+      }
+    }
+
+    // If all validations pass, submit the form
     const formData = new FormData();
     formData.append("date", date);
     formData.append("address", address);
     formData.append("appointmentType", appointmentType);
-    formData.append("routerSerial", routerSerial);
+    formData.append("includeRouter", includeRouter); // Add whether router is included
+    if (includeRouter) {
+      formData.append("routerSerial", routerSerial); // Add router serial number only if included
+    }
     formData.append("ontSerial", ontSerial);
     formData.append("inesLength", inesLength);
-    formData.append("prizakia", prizakia); // Convert array to string
+    formData.append("prizakia", prizakia);
     formData.append("spiralMeters", spiralMeters);
     formData.append("notes", notes);
     if (attachment) {
       formData.append("attachment", attachment);
     }
-  
+
     try {
       await axios.post("http://localhost:5000/submit-report", formData, {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
       });
-  
+
       setMessage("✅ Report submitted successfully!");
       // Reset form fields
       setAddress("");
       setAppointmentType("");
-      setRouterSerial("");
+      setIncludeRouter(false); // Reset the checkbox
+      setRouterSerial(""); // Reset the serial number
       setOntSerial("");
       setInesLength("");
       setPrizakia("");
@@ -167,8 +218,27 @@ const App = () => {
             <label>📡 Address</label>
             <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} />
 
-            <label>📡 Router Serial Number:</label>
-            <input type="text" value={routerSerial} onChange={(e) => setRouterSerial(e.target.value)} />
+            <label>
+              <input
+                type="checkbox"
+                checked={includeRouter}
+                onChange={(e) => setIncludeRouter(e.target.checked)}
+              />
+              Include Router
+            </label>
+
+            {includeRouter && (
+              <>
+                <label>Router Serial Number:</label>
+                <input
+                  type="text"
+                  value={routerSerial}
+                  onChange={(e) => setRouterSerial(e.target.value)}
+                  required={includeRouter} // Make it required only if the checkbox is checked
+                  style={inputStyle}
+                />
+              </>
+            )}
 
             <label>🌐 ONT Serial Number:</label>
             <input type="text" value={ontSerial} onChange={(e) => setOntSerial(e.target.value)} />
