@@ -22,6 +22,10 @@ const AdminPanel = ({ token, onLogout }) => {
   const [sortOrder, setSortOrder] = useState("asc");
   const [employees, setEmployees] = useState([]);
   const [totalSpiralMeters, setTotalSpiralMeters] = useState(0);
+  const [totalOtoHuawei, setTotalOtoHuawei] = useState(0);
+  const [totalOtoClassic, setTotalOtoClassic] = useState(0);
+  const [totalRouters, setTotalRouters] = useState(0);
+  const [totalONT, setTotalONT] = useState(0);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -111,7 +115,15 @@ const AdminPanel = ({ token, onLogout }) => {
       return true;
     });
 
+    // Calculate router and ONT counts
+    const { routerCount, ontCount } = calculateRouterAndONTCounts(filtered);
+    setTotalRouters(routerCount);
+    setTotalONT(ontCount);
+
     setTotalSpiralMeters(calculateTotalSpiralMeters(filtered));
+    const { otoHuaweiCount, otoClassicCount } = calculatePrizakiaCounts(filtered);
+    setTotalOtoHuawei(otoHuaweiCount);
+    setTotalOtoClassic(otoClassicCount);
   }, [reports, filterAppointmentType, startDate, endDate, filterEmployee, filterAddress, filterEquipment]);
 
   // Function to calculate total spiral meters
@@ -125,6 +137,39 @@ const AdminPanel = ({ token, onLogout }) => {
       }
     });
     return total;
+  };
+
+  //Function calculate routers
+  const calculateRouterAndONTCounts = (filteredReports) => {
+    let routerCount = 0;
+    let ontCount = 0;
+
+    filteredReports.forEach((report) => {
+      if (report.router_serial) {
+        routerCount++;
+      }
+      if (report.ont_serial) {
+        ontCount++;
+      }
+    });
+
+    return { routerCount, ontCount };
+  };
+
+  //Function to calculate total prizakia
+  const calculatePrizakiaCounts = (filteredReports) => {
+    let otoHuaweiCount = 0;
+    let otoClassicCount = 0;
+
+    filteredReports.forEach((report) => {
+      if (report.prizakia === "Oto Huawei") {
+        otoHuaweiCount++;
+      } else if (report.prizakia === "Oto Classic") {
+        otoClassicCount++;
+      }
+    });
+
+    return { otoHuaweiCount, otoClassicCount };
   };
 
   // Create a new user
@@ -517,12 +562,18 @@ const AdminPanel = ({ token, onLogout }) => {
               <Row className="mb-3">
                 <Col>
                   <strong>Total Appointments:</strong> {filteredReports.length}
-                </Col>
-                <Col>
+                  <br></br>
                   <strong>Total Spiral Meters Used:</strong> {totalSpiralMeters.toFixed(2)}m
+                  <br></br>
+                  <strong>Total Oto Huawei:</strong> {totalOtoHuawei}
+                  <br></br>
+                  <strong>Total Oto Classic:</strong> {totalOtoClassic}
+                  <br></br>
+                  <strong>Total Routers:</strong> {totalRouters}
+                  <br></br>
+                  <strong>Total ONT Devices:</strong> {totalONT}
                 </Col>
               </Row>
-
               <Row className="mb-3">
                 <Col>
                   <Button variant="secondary" className="mb-2" onClick={sortReports}>
