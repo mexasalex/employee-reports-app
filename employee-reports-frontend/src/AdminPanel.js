@@ -28,6 +28,7 @@ const AdminPanel = ({ token, onLogout }) => {
   const [totalONT, setTotalONT] = useState(0);
   const [showCreateEmployeeForm, setShowCreateEmployeeForm] = useState(false);
   const [showEmployeeList, setShowEmployeeList] = useState(false);
+  const [rowLimit, setRowLimit] = useState(20); // Default limit is 20
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -372,6 +373,8 @@ const AdminPanel = ({ token, onLogout }) => {
     return true;
   });
 
+  const limitedReports = filteredReports.slice(0, rowLimit);
+
   return (
     <Container fluid className="p-4">
       <Row className="mb-4">
@@ -606,7 +609,20 @@ const AdminPanel = ({ token, onLogout }) => {
                   </Button>
                 </Col>
               </Row>
-
+              <Form.Group className="w-25 mb-3">
+                <Form.Label>Rows per page:</Form.Label>
+                <Form.Control
+                  as="select"
+                  value={rowLimit}
+                  onChange={(e) => setRowLimit(Number(e.target.value))}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </Form.Control>
+              </Form.Group>
+              <div className="table-responsive" style={{ overflowX: "auto" }}>
               <Table striped bordered hover>
                 <thead>
                   <tr>
@@ -626,7 +642,7 @@ const AdminPanel = ({ token, onLogout }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredReports.map((report) => (
+                  {limitedReports.map((report) => (
                     <tr key={report.id}>
                       <td>{report.name}</td>
                       <td>{formatDate(report.date)}</td>
@@ -664,11 +680,12 @@ const AdminPanel = ({ token, onLogout }) => {
                   ))}
                 </tbody>
               </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+            </div>
+          </Card.Body>
+        </Card>
+      </Col>
+    </Row>
+    </Container >
   );
 };
 
