@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import AdminPanel from "./AdminPanel";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { Form, Button, Alert, Card, Container, Row, Col } from "react-bootstrap";
 
 const App = () => {
   const [username, setUsername] = useState("");
@@ -208,143 +209,206 @@ const App = () => {
   }, []);
 
   return (
-    <div style={{ padding: "20px", maxWidth: "500px", margin: "auto", fontFamily: "Arial, sans-serif" }}>
+    <Container fluid className="p-4">
       {!token ? (
-        <>
-          <h2>🔐 Login</h2>
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column" }}>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" required style={inputStyle} />
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required style={inputStyle} />
-            <button type="submit" style={buttonStyle}>Login</button>
-          </form>
-        </>
+        <Row className="justify-content-center">
+          <Col md={6}>
+            <Card>
+              <Card.Body>
+                <h2 className="text-center mb-4">🔐 Login</h2>
+                <Form onSubmit={handleLogin}>
+                  <Form.Group className="mb-3">
+                    <Form.Control
+                      type="text"
+                      placeholder="Username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Control
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </Form.Group>
+                  <Button variant="primary" type="submit" className="w-100">
+                    Login
+                  </Button>
+                </Form>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
       ) : role === "admin" ? (
         <AdminPanel token={token} onLogout={handleLogout} />
       ) : (
-        <>
-          <h2>📋 Submit Daily Report</h2>
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column" }}>
-            <label>Date:</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={inputStyle} />
+        <Row className="justify-content-center">
+          <Col md={8}>
+            <Card>
+              <Card.Body>
+                <h2 className="text-center mb-4">📋 Submit Daily Report</h2>
+                {message && (
+                  <Alert variant={message.startsWith("✅") ? "success" : "danger"} className="mb-4">
+                    {message}
+                  </Alert>
+                )}
+                <Form onSubmit={handleSubmit}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Date:</Form.Label>
+                    <Form.Control
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      required
+                    />
+                  </Form.Group>
 
-            <label>Appointment Type:</label>
-            <select value={appointmentType} onChange={(e) => setAppointmentType(e.target.value)} required style={inputStyle}>
-              <option value="">Select Appointment Type</option>
-              <option value="ΟΛΟΚΛΗΡΩΜΕΝΟ">ΟΛΟΚΛΗΡΩΜΕΝΟ</option>
-              <option value="ΚΑΤΑΣΚΕΥΗ">ΚΑΤΑΣΚΕΥΗ</option>
-              <option value="ΕΝΕΡΓΟΠΟΙΗΣΗ">ΕΝΕΡΓΟΠΟΙΗΣΗ</option>
-              <option value="ΣΠΙΡΑΛ">ΣΠΙΡΑΛ</option>
-              <option value="BEP-OTO">BEP-OTO</option>
-            </select>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Appointment Type:</Form.Label>
+                    <Form.Control
+                      as="select"
+                      value={appointmentType}
+                      onChange={(e) => setAppointmentType(e.target.value)}
+                      required
+                    >
+                      <option value="">Select Appointment Type</option>
+                      <option value="ΟΛΟΚΛΗΡΩΜΕΝΟ">ΟΛΟΚΛΗΡΩΜΕΝΟ</option>
+                      <option value="ΚΑΤΑΣΚΕΥΗ">ΚΑΤΑΣΚΕΥΗ</option>
+                      <option value="ΕΝΕΡΓΟΠΟΙΗΣΗ">ΕΝΕΡΓΟΠΟΙΗΣΗ</option>
+                      <option value="ΣΠΙΡΑΛ">ΣΠΙΡΑΛ</option>
+                      <option value="BEP-OTO">BEP-OTO</option>
+                    </Form.Control>
+                  </Form.Group>
 
-            <label>📡 Address</label>
-            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} />
+                  <Form.Group className="mb-3">
+                    <Form.Label>Address:</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="Enter address"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      required
+                    />
+                  </Form.Group>
 
-            <label>
-              <input
-                type="checkbox"
-                checked={includeRouter}
-                onChange={(e) => setIncludeRouter(e.target.checked)}
-              />
-              Include Router
-            </label>
+                  <Form.Group className="mb-3">
+                    <Form.Check
+                      type="checkbox"
+                      label="Include Router"
+                      checked={includeRouter}
+                      onChange={(e) => setIncludeRouter(e.target.checked)}
+                    />
+                    {includeRouter && (
+                      <Form.Control
+                        type="text"
+                        placeholder="Router Serial Number"
+                        value={routerSerial}
+                        onChange={(e) => setRouterSerial(e.target.value)}
+                        required={includeRouter}
+                        className="mt-2"
+                      />
+                    )}
+                  </Form.Group>
 
-            {includeRouter && (
-              <>
-                <label>Router Serial Number:</label>
-                <input
-                  type="text"
-                  value={routerSerial}
-                  onChange={(e) => setRouterSerial(e.target.value)}
-                  required={includeRouter} // Make it required only if the checkbox is checked
-                  style={inputStyle}
-                />
-              </>
-            )}
+                  <Form.Group className="mb-3">
+                    <Form.Check
+                      type="checkbox"
+                      label="Include ONT"
+                      checked={includeONT}
+                      onChange={(e) => setIncludeONT(e.target.checked)}
+                    />
+                    {includeONT && (
+                      <Form.Control
+                        type="text"
+                        placeholder="ONT Serial Number"
+                        value={ontSerial}
+                        onChange={(e) => setOntSerial(e.target.value)}
+                        required={includeONT}
+                        className="mt-2"
+                      />
+                    )}
+                  </Form.Group>
 
-            <label>
-              <input
-                type="checkbox"
-                checked={includeONT}
-                onChange={(e) => setIncludeONT(e.target.checked)}
-              />
-              Include ONT
-            </label>
+                  <Form.Group className="mb-3">
+                    <Form.Label>INES Length:</Form.Label>
+                    <Form.Control
+                      as="select"
+                      value={inesLength}
+                      onChange={(e) => setInesLength(e.target.value)}
+                    >
+                      <option value="">Select Length</option>
+                      <option value="10m">10m</option>
+                      <option value="20m">20m</option>
+                    </Form.Control>
+                  </Form.Group>
 
-            {includeONT && (
-              <>
-                <label>ONT Serial Number:</label>
-                <input
-                  type="text"
-                  value={ontSerial}
-                  onChange={(e) => setOntSerial(e.target.value)}
-                  required={includeONT} // Make it required only if the checkbox is checked
-                  style={inputStyle}
-                />
-              </>
-            )}
+                  <Form.Group className="mb-3">
+                    <Form.Label>Prizakia:</Form.Label>
+                    <Form.Control
+                      as="select"
+                      value={prizakia}
+                      onChange={(e) => setPrizakia(e.target.value)}
+                    >
+                      <option value="">Select Prizakia</option>
+                      <option value="Oto Huawei">Oto Huawei</option>
+                      <option value="Oto Classic">Oto Classic</option>
+                    </Form.Control>
+                  </Form.Group>
 
-            <label>🔌 INES Length:</label>
-            <select value={inesLength} onChange={(e) => setInesLength(e.target.value)}>
-              <option value="">Select Length</option>
-              <option value="10m">10m</option>
-              <option value="20m">20m</option>
-              <option value="30m">30m</option>
-              <option value="40m">40m</option>
-            </select>
+                  <Form.Group className="mb-3">
+                    <Form.Check
+                      type="checkbox"
+                      label="Include Spiral Meters"
+                      checked={includeSpiralMeters}
+                      onChange={(e) => setIncludeSpiralMeters(e.target.checked)}
+                    />
+                    {includeSpiralMeters && (
+                      <Form.Control
+                        type="number"
+                        placeholder="Enter spiral meters"
+                        value={spiralMeters}
+                        onChange={(e) => setSpiralMeters(e.target.value)}
+                        required={includeSpiralMeters}
+                        className="mt-2"
+                      />
+                    )}
+                  </Form.Group>
 
-            <label>🏠 Prizakia:</label>
-            <select value={prizakia} onChange={(e) => setPrizakia(e.target.value)}>
-              <option value="">Select ONT</option>
-              <option value="Oto Huawei">Oto Huawei</option>
-              <option value="Oto Classic">Oto Classic</option>
-            </select>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Notes:</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      placeholder="Enter additional notes"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                    />
+                  </Form.Group>
 
-            <label>
-              <input
-                type="checkbox"
-                checked={includeSpiralMeters}
-                onChange={(e) => setIncludeSpiralMeters(e.target.checked)}
-              />
-              Include Spiral Meters
-            </label>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Attachment (Image/Video):</Form.Label>
+                    <Form.Control type="file" accept="image/*,video/*" onChange={handleFileChange} />
+                  </Form.Group>
 
-            {includeSpiralMeters && (
-              <>
-                <label>Spiral Meters:</label>
-                <input
-                  type="number"
-                  value={spiralMeters}
-                  onChange={(e) => setSpiralMeters(e.target.value)}
-                  required={includeSpiralMeters} // Make it required only if the checkbox is checked
-                  style={inputStyle}
-                />
-              </>
-            )}
+                  <Button variant="primary" type="submit" className="w-100">
+                    📩 Submit Report
+                  </Button>
+                </Form>
 
-
-            <label>Notes (Optional):</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={inputStyle} placeholder="Any additional comments..."></textarea>
-
-            <label>Attachment (Image/Video Only):</label>
-            <input type="file" accept="image/*,video/*" onChange={handleFileChange} />
-
-
-            <button type="submit" style={buttonStyle}>📩 Submit Report</button>
-          </form>
-
-          {message && <p style={{ color: message.startsWith("✅") ? "green" : "red" }}>{message}</p>}
-
-          <button onClick={handleLogout} style={logoutButtonStyle}>🚪 Logout</button>
-        </>
+                <Button variant="danger" onClick={handleLogout} className="w-100 mt-3">
+                  🚪 Logout
+                </Button>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
       )}
-    </div>
+    </Container>
   );
 };
-
-// ✅ Inline Styles for Better UI
-const inputStyle = { marginBottom: "10px", padding: "8px", border: "1px solid #ccc", borderRadius: "5px" };
-const buttonStyle = { padding: "10px", backgroundColor: "#007BFF", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" };
-const logoutButtonStyle = { marginTop: "10px", padding: "10px", backgroundColor: "#DC3545", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" };
 
 export default App;
