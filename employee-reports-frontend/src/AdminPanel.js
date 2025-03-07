@@ -14,9 +14,14 @@ const AdminPanel = ({ token, onLogout }) => {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [filterAppointmentType, setFilterAppointmentType] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [filterEmployee, setFilterEmployee] = useState("");
+  const [filterAddress, setFilterAddress] = useState("");
+  const [filterEquipment, setFilterEquipment] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
 
-
+  //Fetch all reports
   useEffect(() => {
     const fetchReports = async () => {
       try {
@@ -73,7 +78,6 @@ const AdminPanel = ({ token, onLogout }) => {
       setMessage("❌ Error creating employee.");
     }
   };
-
   // Delete a user
   const deleteUser = async (id) => {
     try {
@@ -200,10 +204,43 @@ const AdminPanel = ({ token, onLogout }) => {
     doc.save("Employee_Reports.pdf");
   };
 
-  // Filter reports by appointment type
-  const filteredReports = filterAppointmentType
-    ? reports.filter((report) => report.appointment_type === filterAppointmentType)
-    : reports;
+  // Filter reports
+  const filteredReports = reports.filter((report) => {
+    // Filter by appointment type
+    if (filterAppointmentType && report.appointment_type !== filterAppointmentType) {
+      return false;
+    }
+
+    // Filter by date range
+    if (startDate && endDate) {
+      const reportDate = new Date(report.date).getTime();
+      const start = new Date(startDate).getTime();
+      const end = new Date(endDate).getTime();
+      if (reportDate < start || reportDate > end) {
+        return false;
+      }
+    }
+
+    // Filter by employee
+    if (filterEmployee && !report.name.toLowerCase().includes(filterEmployee.toLowerCase())) {
+      return false;
+    }
+
+    // Filter by address
+    if (filterAddress && !report.address.toLowerCase().includes(filterAddress.toLowerCase())) {
+      return false;
+    }
+
+    // Filter by equipment
+    if (filterEquipment === "router" && !report.router_serial) {
+      return false;
+    }
+    if (filterEquipment === "ont" && !report.ont_serial) {
+      return false;
+    }
+
+    return true;
+  });
 
   // Table style for better readability
   const tableStyle = {
@@ -282,8 +319,9 @@ const AdminPanel = ({ token, onLogout }) => {
 
       <h3>Submitted Reports</h3>
       <div className="mb-3">
+        <h4>Filters</h4>
         <Form.Group>
-          <Form.Label>Filter by Appointment Type:</Form.Label>
+          <Form.Label>Appointment Type:</Form.Label>
           <Form.Control
             as="select"
             value={filterAppointmentType}
@@ -297,10 +335,76 @@ const AdminPanel = ({ token, onLogout }) => {
             <option value="BEP-OTO">BEP-OTO</option>
           </Form.Control>
         </Form.Group>
+
+        <Form.Group>
+          <Form.Label>Date Range:</Form.Label>
+          <div className="d-flex gap-2">
+            <Form.Control
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <Form.Control
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        </Form.Group>
+
+        <Form.Group>
+          <Form.Label>Employee:</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="Search by employee name"
+            value={filterEmployee}
+            onChange={(e) => setFilterEmployee(e.target.value)}
+          />
+        </Form.Group>
+
+        <Form.Group>
+          <Form.Label>Address:</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="Search by address"
+            value={filterAddress}
+            onChange={(e) => setFilterAddress(e.target.value)}
+          />
+        </Form.Group>
+
+        <Form.Group>
+          <Form.Label>Equipment:</Form.Label>
+          <Form.Control
+            as="select"
+            value={filterEquipment}
+            onChange={(e) => setFilterEquipment(e.target.value)}
+          >
+            <option value="">All</option>
+            <option value="router">Includes Router</option>
+            <option value="ont">Includes ONT</option>
+          </Form.Control>
+        </Form.Group>
+
+        <Button
+          variant="secondary"
+          className="mb-3"
+          onClick={() => {
+            setFilterAppointmentType("");
+            setStartDate("");
+            setEndDate("");
+            setFilterEmployee("");
+            setFilterAddress("");
+            setFilterEquipment("");
+          }}
+        >
+          🔄 Reset Filters
+        </Button>
       </div>
+
       <div className="mb-3">
         <strong>Total Appointments:</strong> {filteredReports.length}
       </div>
+
       <Button variant="secondary" className="mb-2" onClick={sortReports}>
         🔃 Sort by Date ({sortOrder.toUpperCase()})
       </Button>
@@ -310,6 +414,7 @@ const AdminPanel = ({ token, onLogout }) => {
       <Button variant="primary" className="mb-2" onClick={exportToPDF}>
         📄 Export to PDF
       </Button>
+
       <Table striped bordered hover>
         <thead>
           <tr>
@@ -319,7 +424,6 @@ const AdminPanel = ({ token, onLogout }) => {
             <th style={tableStyle}>Type</th>
             <th style={tableStyle}>Router Serial</th>
             <th style={tableStyle}>ONT Serial</th>
-            <th style={tableStyle}>Ines Lenght</th>
             <th style={tableStyle}>Prizakia</th>
             <th style={tableStyle}>Spiral (m)</th>
             <th style={tableStyle}>Notes</th>
