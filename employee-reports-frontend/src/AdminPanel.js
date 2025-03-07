@@ -20,8 +20,8 @@ const AdminPanel = ({ token, onLogout }) => {
   const [filterAddress, setFilterAddress] = useState("");
   const [filterEquipment, setFilterEquipment] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
+  const [employees, setEmployees] = useState([]);
 
-  //Fetch all reports
   useEffect(() => {
     const fetchReports = async () => {
       try {
@@ -45,6 +45,18 @@ const AdminPanel = ({ token, onLogout }) => {
       }
     };
 
+    const fetchEmployees = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/admin/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setEmployees(response.data);
+      } catch (error) {
+        console.error("Error fetching employees:", error);
+      }
+    };
+
+    fetchEmployees();
     fetchReports();
     fetchUsers();
   }, [token]); // Only `token` is included in the dependency array
@@ -78,6 +90,8 @@ const AdminPanel = ({ token, onLogout }) => {
       setMessage("❌ Error creating employee.");
     }
   };
+
+
   // Delete a user
   const deleteUser = async (id) => {
     try {
@@ -222,7 +236,7 @@ const AdminPanel = ({ token, onLogout }) => {
     }
 
     // Filter by employee
-    if (filterEmployee && !report.name.toLowerCase().includes(filterEmployee.toLowerCase())) {
+    if (filterEmployee && report.name !== filterEmployee) {
       return false;
     }
 
@@ -355,11 +369,17 @@ const AdminPanel = ({ token, onLogout }) => {
         <Form.Group>
           <Form.Label>Employee:</Form.Label>
           <Form.Control
-            type="text"
-            placeholder="Search by employee name"
+            as="select"
             value={filterEmployee}
             onChange={(e) => setFilterEmployee(e.target.value)}
-          />
+          >
+            <option value="">All</option>
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.name}>
+                {employee.name}
+              </option>
+            ))}
+          </Form.Control>
         </Form.Group>
 
         <Form.Group>
