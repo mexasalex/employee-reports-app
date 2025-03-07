@@ -101,36 +101,82 @@ const AdminPanel = ({ token, onLogout }) => {
     XLSX.writeFile(workbook, "Employee_Reports.xlsx");
   };
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", { // "en-GB" formats as "DD/MM/YYYY"
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   const exportToPDF = () => {
     const doc = new jsPDF();
-    doc.text("Employee Reports", 20, 10);
-
+  
+    // Set the title
+    doc.setFontSize(18);
+    doc.text("Employee Reports", 14, 20);
+  
+    // Define the table headers and data
     autoTable(doc, {
-      head: [["Employee", "Date", "Appointments", "Type", "Equipment", "Materials", "Notes", "Attachment"]],
-      body: reports.map(report => [
-        report.name,
-        report.date,
-        report.appointments,
-        report.appointment_type,
-        report.equipment,
-        report.materials,
-        report.notes,
-        report.attachment ? `http://localhost:5000/uploads/${report.attachment}` : "No Attachment",
+      startY: 25, // Start table below the title
+      head: [
+        [
+          "Employee",
+          "Date",
+          "Address",
+          "Appointment Type",
+          "Router Serial",
+          "ONT Serial",
+          "INES Length",
+          "Prizakia",
+          "Spiral Meters",
+          "Notes",
+          "Attachment",
+        ],
+      ],
+      body: reports.map((report) => [
+        report.name, // Employee name
+        new Date(report.date).toLocaleDateString(), // Format date
+        report.address, // Address
+        report.appointment_type, // Appointment type (supports Greek letters)
+        report.router_serial, // Router serial number
+        report.ont_serial, // ONT serial number
+        report.ines_length, // INES length
+        report.prizakia, // Prizakia
+        report.spiral_meters, // Spiral meters
+        report.notes, // Notes
+        report.attachment
+          ? `http://localhost:5000/uploads/${report.attachment}`
+          : "No Attachment", // Attachment link
       ]),
+      theme: "grid", // Add grid lines for better readability
+      styles: {
+        font: "helvetica", // Use a standard font
+        fontSize: 10, // Set font size
+        cellPadding: 3, // Add padding to cells
+        overflow: "linebreak", // Handle long text by breaking lines
+      },
+      headStyles: {
+        fillColor: "#2c3e50", // Dark background for header
+        textColor: "#ffffff", // White text for header
+        fontStyle: "bold", // Bold header text
+      },
+      columnStyles: {
+        0: { cellWidth: 30 }, // Employee column width
+        1: { cellWidth: 25 }, // Date column width
+        2: { cellWidth: 40 }, // Address column width
+        3: { cellWidth: 40 }, // Appointment Type column width
+        4: { cellWidth: 30 }, // Router Serial column width
+        5: { cellWidth: 30 }, // ONT Serial column width
+        6: { cellWidth: 25 }, // INES Length column width
+        7: { cellWidth: 25 }, // Prizakia column width
+        8: { cellWidth: 25 }, // Spiral Meters column width
+        9: { cellWidth: 40 }, // Notes column width
+        10: { cellWidth: 40 }, // Attachment column width
+      },
     });
-
-    // If the attachment is an image, attempt to add it to the PDF
-    reports.forEach((report, index) => {
-      if (report.attachment && /\.(jpg|jpeg|png)$/i.test(report.attachment)) {
-        const img = new Image();
-        img.src = `http://localhost:5000/uploads/${report.attachment}`;
-        img.onload = function () {
-          doc.addImage(img, "JPEG", 15, doc.lastAutoTable.finalY + 10, 40, 20);
-          doc.save("Employee_Reports.pdf");
-        };
-      }
-    });
-
+    // Save the PDF
     doc.save("Employee_Reports.pdf");
   };
 
@@ -141,14 +187,6 @@ const AdminPanel = ({ token, onLogout }) => {
     overflow: "hidden",       // Prevent excessive overflow
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-GB", { // "en-GB" formats as "DD/MM/YYYY"
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
 
   return (
     <div className="container mt-4">
@@ -202,9 +240,12 @@ const AdminPanel = ({ token, onLogout }) => {
           <tr>
             <th style={tableStyle}>Employee</th>
             <th style={tableStyle}>Date</th>
+            <th style={tableStyle}>Address</th>
             <th style={tableStyle}>Type</th>
-            <th style={tableStyle}>Equipment</th>
-            <th style={tableStyle}>Materials</th>
+            <th style={tableStyle}>Router Serial</th>
+            <th style={tableStyle}>ONT Serial</th>
+            <th style={tableStyle}>Prizakia</th>
+            <th style={tableStyle}>Spiral (m)</th>
             <th style={tableStyle}>Notes</th>
             <th style={tableStyle}>Attachment</th>
             <th style={tableStyle}>Action</th>
@@ -215,9 +256,13 @@ const AdminPanel = ({ token, onLogout }) => {
             <tr key={report.id}>
               <td style={tableStyle}>{report.name}</td>
               <td style={tableStyle}>{formatDate(report.date)}</td>
+              <td style={tableStyle}>{report.address}</td>
               <td style={tableStyle}>{report.appointment_type}</td>
-              <td style={tableStyle}>{report.equipment}</td>
-              <td style={tableStyle}>{report.materials}</td>
+              <td style={tableStyle}>{report.router_serial}</td>
+              <td style={tableStyle}>{report.ont_serial}</td>
+              <td style={tableStyle}>{report.ines_length}</td>
+              <td style={tableStyle}>{report.prizakia}</td>
+              <td style={tableStyle}>{report.spiral_meters}</td>
               <td style={tableStyle}>{report.notes}</td>
               <td>
                 {report.attachment ? (
