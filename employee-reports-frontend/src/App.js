@@ -105,11 +105,11 @@ const App = () => {
     }
 
     // INES Length validation
-    const allowedInesLengths = ["10m", "20m"];
+    /*const allowedInesLengths = ["10m", "20m", "30m", "40m"];
     if (!allowedInesLengths.includes(inesLength)) {
       setMessage("Invalid INES Length. Allowed values are 10m or 20m.");
       return;
-    }
+    }*/
 
     // Prizakia validation
     const allowedPrizakia = ["Oto Huawei", "Oto Classic"];
@@ -343,6 +343,8 @@ const App = () => {
                       <option value="">Select Length</option>
                       <option value="10m">10m</option>
                       <option value="20m">20m</option>
+                      <option value="30m">30m</option>
+                      <option value="40m">40m</option>
                     </Form.Control>
                   </Form.Group>
 

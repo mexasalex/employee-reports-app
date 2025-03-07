@@ -134,15 +134,11 @@ app.post("/submit-report", authenticateToken, upload.single("attachment"), async
     return res.status(403).json({ error: "Access denied" });
   }
 
-  // Log file info for debugging
-  console.log("File Upload Debugging:");
-  console.log("File Object:", req.file);
-
   const { date, address, appointmentType, includeRouter, routerSerial, includeONT, ontSerial, includeSpiralMeters, spiralMeters, inesLength, prizakia, notes } = req.body;
   const userId = req.user.userId;
   const attachment = req.file ? req.file.filename : null;
 
-  // Required fields validation (excluding routerSerial, ontSerial, and spiralMeters)
+  // Required fields validation
   if (!date || !address || !appointmentType || !inesLength || !prizakia) {
     return res.status(400).json({ error: "All fields are required." });
   }
@@ -162,25 +158,22 @@ app.post("/submit-report", authenticateToken, upload.single("attachment"), async
     return res.status(400).json({ error: "Spiral Number is required." });
   }
 
-
-  console.log("Received Data:", { date, address, appointmentType, routerSerial, ontSerial, inesLength, prizakia, spiralMeters, notes, attachment });
-
   try {
     const newReport = await pool.query(
       `INSERT INTO reports 
-       (user_id, date, address, appointment_type, router_serial, ont_serial, ines_length, prizakia, spiral_meters, notes, attachment) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+       (user_id, date, address, appointment_type, router_serial, ont_serial, ines_length, prizakia, spiral_meters, notes, attachment, created_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) 
        RETURNING *`,
       [
         userId,
         date,
         address,
         appointmentType,
-        includeRouter === "true" ? routerSerial : null, // Include router serial only if checkbox is checked
-        includeONT === "true" ? ontSerial : null, // Include ONT serial only if checkbox is checked
+        includeRouter === "true" ? routerSerial : null,
+        includeONT === "true" ? ontSerial : null,
         inesLength,
         prizakia,
-        includeSpiralMeters === "true" ? spiralMeters : null, // Include Spiral Meters only if checkbox is checked
+        includeSpiralMeters === "true" ? spiralMeters : null,
         notes,
         attachment,
       ]
@@ -200,7 +193,7 @@ app.get("/admin/reports", authenticateToken, async (req, res) => {
 
   try {
     const reports = await pool.query(
-      "SELECT reports.id, users.name, reports.date, reports.address, reports.appointment_type, reports.router_serial, reports.ont_serial, reports.ines_length, reports.prizakia, reports.spiral_meters, reports.notes, reports.attachment FROM reports JOIN users ON reports.user_id = users.id ORDER BY reports.date DESC"
+      "SELECT reports.id, users.name, reports.date, reports.address, reports.appointment_type, reports.router_serial, reports.ont_serial, reports.ines_length, reports.prizakia, reports.spiral_meters, reports.notes, reports.attachment, reports.created_at FROM reports JOIN users ON reports.user_id = users.id ORDER BY reports.date DESC"
     );
     res.json(reports.rows);
   } catch (err) {
