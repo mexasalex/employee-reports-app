@@ -21,6 +21,7 @@ const AdminPanel = ({ token, onLogout }) => {
   const [filterEquipment, setFilterEquipment] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
   const [employees, setEmployees] = useState([]);
+  const [totalSpiralMeters, setTotalSpiralMeters] = useState(0);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -61,7 +62,7 @@ const AdminPanel = ({ token, onLogout }) => {
     fetchUsers();
   }, [token]); // Only `token` is included in the dependency array
 
-  const fetchUsersUpdateOnClick= async () => {
+  const fetchUsersUpdateOnClick = async () => {
     try {
       const response = await axios.get("http://localhost:5000/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
@@ -70,6 +71,60 @@ const AdminPanel = ({ token, onLogout }) => {
     } catch (error) {
       console.error("Error fetching users:", error);
     }
+  };
+
+  useEffect(() => {
+    const filtered = reports.filter((report) => {
+      // Filter by appointment type
+      if (filterAppointmentType && report.appointment_type !== filterAppointmentType) {
+        return false;
+      }
+
+      // Filter by date range
+      if (startDate && endDate) {
+        const reportDate = new Date(report.date).getTime();
+        const start = new Date(startDate).getTime();
+        const end = new Date(endDate).getTime();
+        if (reportDate < start || reportDate > end) {
+          return false;
+        }
+      }
+
+      // Filter by employee
+      if (filterEmployee && report.name !== filterEmployee) {
+        return false;
+      }
+
+      // Filter by address
+      if (filterAddress && !report.address.toLowerCase().includes(filterAddress.toLowerCase())) {
+        return false;
+      }
+
+      // Filter by equipment
+      if (filterEquipment === "router" && !report.router_serial) {
+        return false;
+      }
+      if (filterEquipment === "ont" && !report.ont_serial) {
+        return false;
+      }
+
+      return true;
+    });
+
+    setTotalSpiralMeters(calculateTotalSpiralMeters(filtered));
+  }, [reports, filterAppointmentType, startDate, endDate, filterEmployee, filterAddress, filterEquipment]);
+
+  // Function to calculate total spiral meters
+  const calculateTotalSpiralMeters = (filteredReports) => {
+    let total = 0;
+    filteredReports.forEach((report) => {
+      console.log("Spiral Meters:", report.spiral_meters); // Debugging line
+      const spiralMeters = parseFloat(report.spiral_meters);
+      if (!isNaN(spiralMeters)) {
+        total += spiralMeters;
+      }
+    });
+    return total;
   };
 
   // Create a new user
@@ -237,6 +292,7 @@ const AdminPanel = ({ token, onLogout }) => {
     if (filterAppointmentType && report.appointment_type !== filterAppointmentType) {
       return false;
     }
+
 
     // Filter by date range
     if (startDate && endDate) {
@@ -462,6 +518,9 @@ const AdminPanel = ({ token, onLogout }) => {
                 <Col>
                   <strong>Total Appointments:</strong> {filteredReports.length}
                 </Col>
+                <Col>
+                  <strong>Total Spiral Meters Used:</strong> {totalSpiralMeters.toFixed(2)}m
+                </Col>
               </Row>
 
               <Row className="mb-3">
@@ -484,8 +543,9 @@ const AdminPanel = ({ token, onLogout }) => {
                     <th>Type</th>
                     <th>Router Serial</th>
                     <th>ONT Serial</th>
-                    <th>Spiral (m)</th>
+                    <th>Ines (m)</th>
                     <th>Prizakia</th>
+                    <th>Spiral (m)</th>
                     <th>Notes</th>
                     <th>Attachment</th>
                     <th>Created At</th>
@@ -504,6 +564,7 @@ const AdminPanel = ({ token, onLogout }) => {
                       <td>{report.ines_length}</td>
                       <td>{report.prizakia}</td>
                       <td>{report.spiral_meters}</td>
+                      <td>{report.notes}</td>
                       <td>
                         {report.attachment ? (
                           report.attachment.endsWith(".mp4") || report.attachment.endsWith(".avi") ? (
