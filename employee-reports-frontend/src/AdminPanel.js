@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Table, Button, Form, Alert } from "react-bootstrap";
+import { Table, Button, Form, Alert, Card, Container, Row, Col } from "react-bootstrap";
 //import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -90,7 +90,6 @@ const AdminPanel = ({ token, onLogout }) => {
       setMessage("❌ Error creating employee.");
     }
   };
-
 
   // Delete a user
   const deleteUser = async (id) => {
@@ -256,237 +255,270 @@ const AdminPanel = ({ token, onLogout }) => {
     return true;
   });
 
-  // Table style for better readability
-  const tableStyle = {
-    wordWrap: "break-word", // Allow breaking long words
-    whiteSpace: "normal", // Allow wrapping inside cells
-    maxWidth: "200px", // Limit column width for better readability
-    overflow: "hidden", // Prevent excessive overflow
-  };
-
   return (
-    <div className="container mt-4">
-      <h2>Admin Panel</h2>
-      <Button variant="danger" onClick={onLogout} className="mb-3">
-        🚪 Logout
-      </Button>
+    <Container fluid className="p-4">
+      <Row className="mb-4">
+        <Col>
+          <h2 className="mb-3">Admin Panel</h2>
+          <Button variant="danger" onClick={onLogout} className="mb-3">
+            🚪 Logout
+          </Button>
+        </Col>
+      </Row>
 
-      {message && <Alert variant={message.startsWith("✅") ? "success" : "danger"}>{message}</Alert>}
+      {message && (
+        <Row className="mb-4">
+          <Col>
+            <Alert variant={message.startsWith("✅") ? "success" : "danger"}>{message}</Alert>
+          </Col>
+        </Row>
+      )}
 
-      <h3>Create Employee</h3>
-      <Form onSubmit={createUser} className="mb-4">
-        <Form.Group>
-          <Form.Control
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </Form.Group>
-        <Form.Group>
-          <Form.Control
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-        </Form.Group>
-        <Form.Group>
-          <Form.Control
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </Form.Group>
-        <Button variant="primary" type="submit">
-          ➕ Create Employee
-        </Button>
-      </Form>
-
-      <h3>Employee List</h3>
-      <Table striped bordered hover>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Username</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id}>
-              <td>{user.name}</td>
-              <td>{user.username}</td>
-              <td>
-                <Button variant="danger" size="sm" onClick={() => deleteUser(user.id)}>
-                  🗑️ Delete
+      <Row className="mb-4">
+        <Col>
+          <Card>
+            <Card.Body>
+              <h3 className="mb-3">Create Employee</h3>
+              <Form onSubmit={createUser}>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="text"
+                    placeholder="Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="text"
+                    placeholder="Username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </Form.Group>
+                <Button variant="primary" type="submit">
+                  ➕ Create Employee
                 </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+              </Form>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
-      <h3>Submitted Reports</h3>
-      <div className="mb-3">
-        <h4>Filters</h4>
-        <Form.Group>
-          <Form.Label>Appointment Type:</Form.Label>
-          <Form.Control
-            as="select"
-            value={filterAppointmentType}
-            onChange={(e) => setFilterAppointmentType(e.target.value)}
-          >
-            <option value="">All</option>
-            <option value="ΟΛΟΚΛΗΡΩΜΕΝΟ">ΟΛΟΚΛΗΡΩΜΕΝΟ</option>
-            <option value="ΚΑΤΑΣΚΕΥΗ">ΚΑΤΑΣΚΕΥΗ</option>
-            <option value="ΕΝΕΡΓΟΠΟΙΗΣΗ">ΕΝΕΡΓΟΠΟΙΗΣΗ</option>
-            <option value="ΣΠΙΡΑΛ">ΣΠΙΡΑΛ</option>
-            <option value="BEP-OTO">BEP-OTO</option>
-          </Form.Control>
-        </Form.Group>
+      <Row className="mb-4">
+        <Col>
+          <Card>
+            <Card.Body>
+              <h3 className="mb-3">Employee List</h3>
+              <Table striped bordered hover>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td>{user.name}</td>
+                      <td>{user.username}</td>
+                      <td>
+                        <Button variant="danger" size="sm" onClick={() => deleteUser(user.id)}>
+                          🗑️ Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
-        <Form.Group>
-          <Form.Label>Date Range:</Form.Label>
-          <div className="d-flex gap-2">
-            <Form.Control
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-            <Form.Control
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
-        </Form.Group>
+      <Row className="mb-4">
+        <Col>
+          <Card>
+            <Card.Body>
+              <h3 className="mb-3">Submitted Reports</h3>
+              <Row className="mb-3">
+                <Col>
+                  <h4>Filters</h4>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Appointment Type:</Form.Label>
+                    <Form.Control
+                      as="select"
+                      value={filterAppointmentType}
+                      onChange={(e) => setFilterAppointmentType(e.target.value)}
+                    >
+                      <option value="">All</option>
+                      <option value="ΟΛΟΚΛΗΡΩΜΕΝΟ">ΟΛΟΚΛΗΡΩΜΕΝΟ</option>
+                      <option value="ΚΑΤΑΣΚΕΥΗ">ΚΑΤΑΣΚΕΥΗ</option>
+                      <option value="ΕΝΕΡΓΟΠΟΙΗΣΗ">ΕΝΕΡΓΟΠΟΙΗΣΗ</option>
+                      <option value="ΣΠΙΡΑΛ">ΣΠΙΡΑΛ</option>
+                      <option value="BEP-OTO">BEP-OTO</option>
+                    </Form.Control>
+                  </Form.Group>
 
-        <Form.Group>
-          <Form.Label>Employee:</Form.Label>
-          <Form.Control
-            as="select"
-            value={filterEmployee}
-            onChange={(e) => setFilterEmployee(e.target.value)}
-          >
-            <option value="">All</option>
-            {employees.map((employee) => (
-              <option key={employee.id} value={employee.name}>
-                {employee.name}
-              </option>
-            ))}
-          </Form.Control>
-        </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Date Range:</Form.Label>
+                    <div className="d-flex gap-2">
+                      <Form.Control
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                      <Form.Control
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </div>
+                  </Form.Group>
 
-        <Form.Group>
-          <Form.Label>Address:</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Search by address"
-            value={filterAddress}
-            onChange={(e) => setFilterAddress(e.target.value)}
-          />
-        </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Employee:</Form.Label>
+                    <Form.Control
+                      as="select"
+                      value={filterEmployee}
+                      onChange={(e) => setFilterEmployee(e.target.value)}
+                    >
+                      <option value="">All</option>
+                      {employees.map((employee) => (
+                        <option key={employee.id} value={employee.name}>
+                          {employee.name}
+                        </option>
+                      ))}
+                    </Form.Control>
+                  </Form.Group>
 
-        <Form.Group>
-          <Form.Label>Equipment:</Form.Label>
-          <Form.Control
-            as="select"
-            value={filterEquipment}
-            onChange={(e) => setFilterEquipment(e.target.value)}
-          >
-            <option value="">All</option>
-            <option value="router">Includes Router</option>
-            <option value="ont">Includes ONT</option>
-          </Form.Control>
-        </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Address:</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="Search by address"
+                      value={filterAddress}
+                      onChange={(e) => setFilterAddress(e.target.value)}
+                    />
+                  </Form.Group>
 
-        <Button
-          variant="secondary"
-          className="mb-3"
-          onClick={() => {
-            setFilterAppointmentType("");
-            setStartDate("");
-            setEndDate("");
-            setFilterEmployee("");
-            setFilterAddress("");
-            setFilterEquipment("");
-          }}
-        >
-          🔄 Reset Filters
-        </Button>
-      </div>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Equipment:</Form.Label>
+                    <Form.Control
+                      as="select"
+                      value={filterEquipment}
+                      onChange={(e) => setFilterEquipment(e.target.value)}
+                    >
+                      <option value="">All</option>
+                      <option value="router">Includes Router</option>
+                      <option value="ont">Includes ONT</option>
+                    </Form.Control>
+                  </Form.Group>
 
-      <div className="mb-3">
-        <strong>Total Appointments:</strong> {filteredReports.length}
-      </div>
+                  <Button
+                    variant="secondary"
+                    className="mb-3"
+                    onClick={() => {
+                      setFilterAppointmentType("");
+                      setStartDate("");
+                      setEndDate("");
+                      setFilterEmployee("");
+                      setFilterAddress("");
+                      setFilterEquipment("");
+                    }}
+                  >
+                    🔄 Reset Filters
+                  </Button>
+                </Col>
+              </Row>
 
-      <Button variant="secondary" className="mb-2" onClick={sortReports}>
-        🔃 Sort by Date ({sortOrder.toUpperCase()})
-      </Button>
-      <Button variant="primary" className="mb-2" onClick={exportToPDF}>
-        📄 Export to PDF
-      </Button>
+              <Row className="mb-3">
+                <Col>
+                  <strong>Total Appointments:</strong> {filteredReports.length}
+                </Col>
+              </Row>
 
-      <Table striped bordered hover>
-        <thead>
-          <tr>
-            <th style={tableStyle}>Employee</th>
-            <th style={tableStyle}>Date</th>
-            <th style={tableStyle}>Address</th>
-            <th style={tableStyle}>Type</th>
-            <th style={tableStyle}>Router Serial</th>
-            <th style={tableStyle}>ONT Serial</th>
-            <th style={tableStyle}>Prizakia</th>
-            <th style={tableStyle}>Spiral (m)</th>
-            <th style={tableStyle}>Notes</th>
-            <th style={tableStyle}>Attachment</th>
-            <th style={tableStyle}>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredReports.map((report) => (
-            <tr key={report.id}>
-              <td style={tableStyle}>{report.name}</td>
-              <td style={tableStyle}>{formatDate(report.date)}</td>
-              <td style={tableStyle}>{report.address}</td>
-              <td style={tableStyle}>{report.appointment_type}</td>
-              <td style={tableStyle}>{report.router_serial}</td>
-              <td style={tableStyle}>{report.ont_serial}</td>
-              <td style={tableStyle}>{report.ines_length}</td>
-              <td style={tableStyle}>{report.prizakia}</td>
-              <td style={tableStyle}>{report.spiral_meters}</td>
-              <td style={tableStyle}>{report.notes}</td>
-              <td>
-                {report.attachment ? (
-                  report.attachment.endsWith(".mp4") || report.attachment.endsWith(".avi") ? (
-                    <video width="100" controls>
-                      <source src={`http://localhost:5000/uploads/${report.attachment}`} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                  ) : (
-                    <a href={`http://localhost:5000/uploads/${report.attachment}`} target="_blank" rel="noopener noreferrer">
-                      <img src={`http://localhost:5000/uploads/${report.attachment}`} alt="Attachment" width="100" />
-                    </a>
-                  )
-                ) : (
-                  "No Attachment"
-                )}
-              </td>
-              <td>
-                <Button variant="danger" size="sm" onClick={() => deleteReport(report.id)}>
-                  🗑️ Delete
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </div>
+              <Row className="mb-3">
+                <Col>
+                  <Button variant="secondary" className="mb-2" onClick={sortReports}>
+                    🔃 Sort by Date ({sortOrder.toUpperCase()})
+                  </Button>
+                  <Button variant="primary" className="mb-2" onClick={exportToPDF}>
+                    📄 Export to PDF
+                  </Button>
+                </Col>
+              </Row>
+
+              <Table striped bordered hover>
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Address</th>
+                    <th>Type</th>
+                    <th>Router Serial</th>
+                    <th>ONT Serial</th>
+                    <th>Spiral (m)</th>
+                    <th>Prizakia</th>
+                    <th>Notes</th>
+                    <th>Attachment</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredReports.map((report) => (
+                    <tr key={report.id}>
+                      <td>{report.name}</td>
+                      <td>{formatDate(report.date)}</td>
+                      <td>{report.address}</td>
+                      <td>{report.appointment_type}</td>
+                      <td>{report.router_serial}</td>
+                      <td>{report.ont_serial}</td>
+                      <td>{report.ines_length}</td>
+                      <td>{report.prizakia}</td>
+                      <td>{report.spiral_meters}</td>
+                      <td>
+                        {report.attachment ? (
+                          report.attachment.endsWith(".mp4") || report.attachment.endsWith(".avi") ? (
+                            <video width="100" controls>
+                              <source src={`http://localhost:5000/uploads/${report.attachment}`} type="video/mp4" />
+                              Your browser does not support the video tag.
+                            </video>
+                          ) : (
+                            <a href={`http://localhost:5000/uploads/${report.attachment}`} target="_blank" rel="noopener noreferrer">
+                              <img src={`http://localhost:5000/uploads/${report.attachment}`} alt="Attachment" width="100" />
+                            </a>
+                          )
+                        ) : (
+                          "No Attachment"
+                        )}
+                      </td>
+                      <td>
+                        <Button variant="danger" size="sm" onClick={() => deleteReport(report.id)}>
+                          🗑️ Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 
