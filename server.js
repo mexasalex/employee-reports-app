@@ -39,7 +39,11 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ storage: storage, fileFilter: fileFilter });
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 25 * 1024 * 1024 }, // Limit file size to 25 MB
+}).array("attachments", 5);
 
 
 // ✅ Middleware: Verify authentication token
@@ -134,65 +138,84 @@ app.post("/login", async (req, res) => {
 });
 
 // ✅ Submit Report (Only for Logged-In Employees, Removes `appointments`)
-app.post("/submit-report", authenticateToken, upload.single("attachment"), async (req, res) => {
-  if (req.user.role !== "employee") {
-    return res.status(403).json({ error: "Access denied" });
-  }
+app.post("/submit-report", authenticateToken, (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({ error: "File size exceeds the limit of 25 MB" });
+      }
+      if (err.message) {
+        return res.status(400).json({ error: err.message });
+      }
+      return res.status(500).json({ error: "Error uploading files" });
+    }
 
-  const { date, address, appointmentType, includeRouter, routerSerial, includeONT, ontSerial, includeSpiralMeters, spiralMeters, inesLength, prizakia, notes } = req.body;
-  const userId = req.user.userId;
-  const attachment = req.file ? req.file.filename : null;
+    if (req.user.role !== "employee") {
+      return res.status(403).json({ error: "Access denied" });
+    }
 
-  // Fetch the employee's name
-  const user = await pool.query("SELECT name FROM users WHERE id = $1", [userId]);
-  const employeeName = user.rows[0].name;
+    const { date, address, appointmentType, includeRouter, routerSerial, includeONT, ontSerial, includeSpiralMeters, spiralMeters, inesLength, prizakia, notes } = req.body;
+    const userId = req.user.userId;
 
-  // Required fields validation
-  if (!date || !address || !appointmentType || !inesLength || !prizakia) {
-    return res.status(400).json({ error: "All fields are required." });
-  }
+    // Fetch the employee's name from the users table
+    try {
+      const user = await pool.query("SELECT name FROM users WHERE id = $1", [userId]);
+      if (user.rows.length === 0) {
+        return res.status(400).json({ error: "User not found" });
+      }
 
-  // If router is included, ensure the serial number is provided
-  if (includeRouter === "true" && !routerSerial) {
-    return res.status(400).json({ error: "Router Serial Number is required." });
-  }
+      const employeeName = user.rows[0].name;
 
-  // If ONT is included, ensure the serial number is provided
-  if (includeONT === "true" && !ontSerial) {
-    return res.status(400).json({ error: "ONT Serial Number is required." });
-  }
+      // Get the list of uploaded files
+      const attachments = req.files ? req.files.map((file) => file.filename) : [];
 
-  // If Spiral Meters is included, ensure the value is provided and valid
-  if (includeSpiralMeters === "true" && !spiralMeters) {
-    return res.status(400).json({ error: "Spiral Number is required." });
-  }
+      // Required fields validation
+      if (!date || !address || !appointmentType || !inesLength || !prizakia) {
+        return res.status(400).json({ error: "All fields are required." });
+      }
 
-  try {
-    const newReport = await pool.query(
-      `INSERT INTO reports 
-       (user_id, employee_name, date, address, appointment_type, router_serial, ont_serial, ines_length, prizakia, spiral_meters, notes, attachment, created_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) 
-       RETURNING *`,
-      [
-        userId,
-        employeeName,
-        date,
-        address,
-        appointmentType,
-        includeRouter === "true" ? routerSerial : null,
-        includeONT === "true" ? ontSerial : null,
-        inesLength,
-        prizakia,
-        includeSpiralMeters === "true" ? spiralMeters : null,
-        notes,
-        attachment,
-      ]
-    );
-    res.json(newReport.rows[0]);
-  } catch (err) {
-    console.error("Database Error:", err);
-    res.status(500).json({ error: "Error submitting report." });
-  }
+      // If router is included, ensure the serial number is provided
+      if (includeRouter === "true" && !routerSerial) {
+        return res.status(400).json({ error: "Router Serial Number is required." });
+      }
+
+      // If ONT is included, ensure the serial number is provided
+      if (includeONT === "true" && !ontSerial) {
+        return res.status(400).json({ error: "ONT Serial Number is required." });
+      }
+
+      // If Spiral Meters is included, ensure the value is provided and valid
+      if (includeSpiralMeters === "true" && !spiralMeters) {
+        return res.status(400).json({ error: "Spiral Number is required." });
+      }
+
+      // Insert the report with the employee_name
+      const newReport = await pool.query(
+        `INSERT INTO reports 
+         (user_id, employee_name, date, address, appointment_type, router_serial, ont_serial, ines_length, prizakia, spiral_meters, notes, attachments, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) 
+         RETURNING *`,
+        [
+          userId,
+          employeeName, // Add the employee_name here
+          date,
+          address,
+          appointmentType,
+          includeRouter === "true" ? routerSerial : null,
+          includeONT === "true" ? ontSerial : null,
+          inesLength,
+          prizakia,
+          includeSpiralMeters === "true" ? spiralMeters : null,
+          notes,
+          attachments.join(","), // Store file paths as a comma-separated string
+        ]
+      );
+      res.json(newReport.rows[0]);
+    } catch (err) {
+      console.error("Database Error:", err);
+      res.status(500).json({ error: "Error submitting report." });
+    }
+  });
 });
 
 // ✅ Get Reports for Admin (View All Reports)
@@ -205,7 +228,7 @@ app.get("/admin/reports", authenticateToken, async (req, res) => {
     const reports = await pool.query(
       `SELECT reports.id, users.name, reports.employee_name, reports.date, reports.address, reports.appointment_type, 
               reports.router_serial, reports.ont_serial, reports.ines_length, reports.prizakia, 
-              reports.spiral_meters, reports.notes, reports.attachment, reports.created_at 
+              reports.spiral_meters, reports.notes, reports.attachments, reports.created_at 
        FROM reports 
        LEFT JOIN users ON reports.user_id = users.id 
        ORDER BY reports.date DESC`

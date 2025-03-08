@@ -129,35 +129,39 @@ const AdminPanel = ({ token, onLogout }) => {
 
   const getCombinedEmployeeList = () => {
     // Extract all unique employee names from the reports table
-    const reportEmployeeNames = [...new Set(reports.map((report) => report.employee_name))];
-
+    const reportEmployeeNames = [...new Set(reports.map((report) => report.employee_name || ""))];
+  
     // Create a list of active users from the users table
     const activeUsers = users.map((user) => user.name);
-
+  
     // Combine the lists and mark deleted users
     const combinedList = reportEmployeeNames.map((name) => {
+      // If the name is null or empty, skip it
+      if (!name) return "";
+  
       // If the name already contains "(Deleted)", return it as is
       if (name.includes("(Deleted)")) {
         return name;
       }
-
+  
       // If the name is not in the active users list, mark it as deleted
       if (!activeUsers.includes(name)) {
         return `${name} (Deleted)`;
       }
-
+  
       // Otherwise, return the name as is
       return name;
     });
-
+  
     // Add active users who haven't submitted any reports yet
     activeUsers.forEach((name) => {
       if (!reportEmployeeNames.includes(name)) {
         combinedList.push(name);
       }
     });
-
-    return combinedList;
+  
+    // Filter out empty strings (null or undefined names)
+    return combinedList.filter((name) => name !== "");
   };
 
   // Function to calculate total spiral meters
@@ -678,17 +682,21 @@ const AdminPanel = ({ token, onLogout }) => {
                         <td>{report.spiral_meters}</td>
                         <td>{report.notes}</td>
                         <td>
-                          {report.attachment ? (
-                            report.attachment.endsWith(".mp4") || report.attachment.endsWith(".avi") ? (
-                              <video width="100" controls>
-                                <source src={`http://localhost:5000/uploads/${report.attachment}`} type="video/mp4" />
-                                Your browser does not support the video tag.
-                              </video>
-                            ) : (
-                              <a href={`http://localhost:5000/uploads/${report.attachment}`} target="_blank" rel="noopener noreferrer">
-                                <img src={`http://localhost:5000/uploads/${report.attachment}`} alt="Attachment" width="100" />
-                              </a>
-                            )
+                          {report.attachments && report.attachments.length > 0 ? (
+                            report.attachments.split(",").map((attachment, index) => (
+                              <div key={index}>
+                                {attachment.endsWith(".mp4") || attachment.endsWith(".avi") ? (
+                                  <video width="100" controls>
+                                    <source src={`http://localhost:5000/uploads/${attachment}`} type="video/mp4" />
+                                    Your browser does not support the video tag.
+                                  </video>
+                                ) : (
+                                  <a href={`http://localhost:5000/uploads/${attachment}`} target="_blank" rel="noopener noreferrer">
+                                    <img src={`http://localhost:5000/uploads/${attachment}`} alt="Attachment" width="100" />
+                                  </a>
+                                )}
+                              </div>
+                            ))
                           ) : (
                             "No Attachment"
                           )}

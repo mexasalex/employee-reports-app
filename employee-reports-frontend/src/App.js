@@ -19,7 +19,7 @@ const App = () => {
   const [prizakia, setPrizakia] = useState("");
   const [spiralMeters, setSpiralMeters] = useState("");
   const [notes, setNotes] = useState("");
-  const [attachment, setAttachment] = useState(null);
+  const [attachments, setAttachments] = useState([]);
   const [message, setMessage] = useState("");
   const [includeRouter, setIncludeRouter] = useState(false);
   const [includeONT, setIncludeONT] = useState(false);
@@ -48,8 +48,35 @@ const App = () => {
 
   // ✅ Handle File Upload Change
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setAttachment(file);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "video/mp4", "video/mpeg"];
+    const maxSize = 25 * 1024 * 1024; // 25 MB per file
+    const maxFiles = 5; // Maximum number of files allowed
+
+    // Validate number of files
+    if (files.length > maxFiles) {
+      alert(`You can upload a maximum of ${maxFiles} files.`);
+      e.target.value = ""; // Clear the file input
+      return;
+    }
+
+    // Validate file types and sizes
+    for (const file of files) {
+      if (!allowedTypes.includes(file.type)) {
+        alert("Only images (JPEG, PNG, GIF) and videos (MP4, MPEG) are allowed.");
+        e.target.value = ""; // Clear the file input
+        return;
+      }
+      if (file.size > maxSize) {
+        alert(`File "${file.name}" exceeds the limit of 25 MB.`);
+        e.target.value = ""; // Clear the file input
+        return;
+      }
+    }
+
+    setAttachments(files); // Set the files if validation passes
   };
 
   // ✅ Handle User Login
@@ -93,7 +120,7 @@ const App = () => {
     // If Spiral Meters is included, ensure the value is provided and valid
     if (includeSpiralMeters && !spiralMeters) {
       setMessage("Sprial is required.");
-        return;
+      return;
     }
 
     // Date validation (ensure date is not in the future)
@@ -125,14 +152,6 @@ const App = () => {
       return;
     }*/
 
-    // Attachment validation (if provided)
-    if (attachment) {
-      const allowedFileTypes = ["image/jpeg", "image/png", "video/mp4"];
-      if (!allowedFileTypes.includes(attachment.type)) {
-        setMessage("Invalid file type. Only images (JPEG, PNG) and videos (MP4) are allowed.");
-        return;
-      }
-    }
 
     // Prepare form data
     const formData = new FormData();
@@ -154,8 +173,9 @@ const App = () => {
     formData.append("inesLength", inesLength);
     formData.append("prizakia", prizakia);
     formData.append("notes", notes);
-    if (attachment) {
-      formData.append("attachment", attachment);
+    // Append each file to the form data
+    for (const file of attachments) {
+      formData.append("attachments", file);
     }
 
     try {
@@ -176,7 +196,7 @@ const App = () => {
       setInesLength("");
       setPrizakia("");
       setNotes("");
-      setAttachment(null);
+      setAttachments([]);
     } catch (error) {
       setMessage("❌ Error submitting report.");
     }
@@ -393,7 +413,7 @@ const App = () => {
 
                   <Form.Group className="mb-3">
                     <Form.Label>Attachment (Image/Video):</Form.Label>
-                    <Form.Control type="file" accept="image/*,video/*" onChange={handleFileChange} />
+                    <Form.Control type="file" accept="image/*,video/*" onChange={handleFileChange} multiple />
                   </Form.Group>
 
                   <Button variant="primary" type="submit" className="w-25 mx-auto d-block mt-3">
