@@ -24,6 +24,7 @@ const App = () => {
   const [includeRouter, setIncludeRouter] = useState(false);
   const [includeONT, setIncludeONT] = useState(false);
   const [includeSpiralMeters, setIncludeSpiralMeters] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false); // New state for success message
 
   const checkTokenExpiration = () => {
     const token = localStorage.getItem("token");
@@ -43,6 +44,16 @@ const App = () => {
         window.location.href = "/login";
       }
     }
+  };
+
+  // Function to show success message and hide it after a few seconds
+  const showTemporarySuccessMessage = (message) => {
+    setMessage(message);
+    setShowSuccessMessage(true);
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+      setMessage("");
+    }, 3000); // Hide after 3 seconds
   };
 
 
@@ -183,7 +194,7 @@ const App = () => {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
       });
 
-      setMessage("✅ Report submitted successfully!");
+      showTemporarySuccessMessage("✅ Report submitted successfully!");
       // Reset form fields
       setAddress("");
       setAppointmentType("");
@@ -271,10 +282,14 @@ const App = () => {
             <Card>
               <Card.Body>
                 <h2 className="text-center mb-4">📋 Submit Daily Report</h2>
-                {message && (
-                  <Alert variant={message.startsWith("✅") ? "success" : "danger"} className="mb-4">
-                    {message}
-                  </Alert>
+                {showSuccessMessage && (
+                  <Row className="mb-4">
+                    <Col>
+                      <Alert variant="success" onClose={() => setShowSuccessMessage(false)} dismissible>
+                        {message}
+                      </Alert>
+                    </Col>
+                  </Row>
                 )}
                 <Form onSubmit={handleSubmit}>
                   <Form.Group className="mb-3">
