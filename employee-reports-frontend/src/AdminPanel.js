@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Table, Button, Form, Alert, Card, Container, Row, Col } from "react-bootstrap";
+import { Table, Button, Form, Alert, Card, Container, Row, Col, Modal } from "react-bootstrap";
 //import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -32,6 +32,8 @@ const AdminPanel = ({ token, onLogout }) => {
   const [showCreateEmployeeForm, setShowCreateEmployeeForm] = useState(false);
   const [showEmployeeList, setShowEmployeeList] = useState(false);
   const [rowLimit, setRowLimit] = useState(20); // Default limit is 20
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null); // Store the item to delete
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,7 +113,7 @@ const AdminPanel = ({ token, onLogout }) => {
 
       return true;
     });
-    
+
     setFilteredReports(filtered); // Update the state
     // Calculate router and ONT counts
     const { routerCount, ontCount } = calculateRouterAndONTCounts(filtered);
@@ -123,6 +125,7 @@ const AdminPanel = ({ token, onLogout }) => {
     setTotalOtoHuawei(otoHuaweiCount);
     setTotalOtoClassic(otoClassicCount);
   }, [reports, filterAppointmentType, startDate, endDate, filterEmployee, filterAddress, filterEquipment]);
+
 
   const getCombinedEmployeeList = () => {
     // Extract all unique employee names from the reports table
@@ -219,6 +222,26 @@ const AdminPanel = ({ token, onLogout }) => {
     } catch (error) {
       setMessage("❌ Error creating employee.");
     }
+  };
+
+
+  const handleDeleteUser = (id) => {
+    setItemToDelete({ id, type: "employee" });
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteReport = (id) => {
+    setItemToDelete({ id, type: "report" });
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (itemToDelete?.type === "employee") {
+      await deleteUser(itemToDelete.id);
+    } else if (itemToDelete?.type === "report") {
+      await deleteReport(itemToDelete.id);
+    }
+    setShowDeleteModal(false);
   };
 
   // Delete a user
@@ -364,6 +387,7 @@ const AdminPanel = ({ token, onLogout }) => {
   const limitedReports = filteredReports.slice(0, rowLimit);
 
   return (
+
     <Container fluid className="p-4">
       <Row className="mb-4">
         <Col>
@@ -373,7 +397,23 @@ const AdminPanel = ({ token, onLogout }) => {
           </Button>
         </Col>
       </Row>
-
+      {/* Confirmation Modal */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Deletion</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this {itemToDelete?.type}?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleConfirmDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
       <Row className="mb-4">
         <Col>
           <Button
@@ -463,7 +503,7 @@ const AdminPanel = ({ token, onLogout }) => {
                         <td>{user.name}</td>
                         <td>{user.username}</td>
                         <td>
-                          <Button variant="danger" size="sm" onClick={() => deleteUser(user.id)}>
+                          <Button variant="danger" size="sm" onClick={() => handleDeleteUser(user.id)}>
                             🗑️ Delete
                           </Button>
                         </td>
@@ -655,7 +695,7 @@ const AdminPanel = ({ token, onLogout }) => {
                         </td>
                         <td>{formatDateForCreatedAt(report.created_at)}</td>
                         <td>
-                          <Button variant="danger" size="sm" onClick={() => deleteReport(report.id)}>
+                          <Button variant="danger" size="sm" onClick={() => handleDeleteReport(report.id)}>
                             🗑️ Delete
                           </Button>
                         </td>
