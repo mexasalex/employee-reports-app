@@ -11,7 +11,6 @@ const App = () => {
   const [role, setRole] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [address, setAddress] = useState("");
-  //const [materials, setMaterials] = useState([]);
   const [appointmentType, setAppointmentType] = useState("");
   const [routerSerial, setRouterSerial] = useState("");
   const [ontSerial, setOntSerial] = useState("");
@@ -24,7 +23,8 @@ const App = () => {
   const [includeRouter, setIncludeRouter] = useState(false);
   const [includeONT, setIncludeONT] = useState(false);
   const [includeSpiralMeters, setIncludeSpiralMeters] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false); // New state for success message
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showErrorMessage, setShowErrorMessage] = useState(false);
 
   const checkTokenExpiration = () => {
     const token = localStorage.getItem("token");
@@ -46,7 +46,7 @@ const App = () => {
     }
   };
 
-  // Function to show success message and hide it after a few seconds
+  // Function to show temporary success message
   const showTemporarySuccessMessage = (message) => {
     setMessage(message);
     setShowSuccessMessage(true);
@@ -56,8 +56,17 @@ const App = () => {
     }, 3000); // Hide after 3 seconds
   };
 
+  // Function to show temporary error message
+  const showTemporaryErrorMessage = (message) => {
+    setMessage(message);
+    setShowErrorMessage(true);
+    setTimeout(() => {
+      setShowErrorMessage(false);
+      setMessage("");
+    }, 3000); // Hide after 3 seconds
+  };
 
-  // ✅ Handle File Upload Change
+  // Handle File Upload Change
   const handleFileChange = (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -90,7 +99,7 @@ const App = () => {
     setAttachments(files); // Set the files if validation passes
   };
 
-  // ✅ Handle User Login
+  // Handle User Login
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -104,33 +113,31 @@ const App = () => {
     }
   };
 
-
-
-  // ✅ Handle Report Submission
+  // Handle Report Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Required fields validation (excluding routerSerial, ontSerial, and spiralMeters)
+    // Required fields validation
     if (!date || !address || !appointmentType || !inesLength || !prizakia) {
-      setMessage("All fields are required.");
+      showTemporaryErrorMessage("❌ Make sure to fill all the necessary fields.");
       return;
     }
 
     // If router is included, ensure the serial number is provided
     if (includeRouter && !routerSerial) {
-      setMessage("Router Serial Number is required.");
+      showTemporaryErrorMessage("❌ Router Serial Number is required.");
       return;
     }
 
     // If ONT is included, ensure the serial number is provided
     if (includeONT && !ontSerial) {
-      setMessage("ONT Serial Number is required.");
+      showTemporaryErrorMessage("❌ ONT Serial Number is required.");
       return;
     }
 
     // If Spiral Meters is included, ensure the value is provided and valid
     if (includeSpiralMeters && !spiralMeters) {
-      setMessage("Sprial is required.");
+      showTemporaryErrorMessage("❌ Spiral Meters value is required.");
       return;
     }
 
@@ -138,53 +145,37 @@ const App = () => {
     const selectedDate = new Date(date);
     const currentDate = new Date();
     if (selectedDate > currentDate) {
-      setMessage("Date cannot be in the future.");
+      showTemporaryErrorMessage("❌ Date cannot be in the future.");
       return;
     }
-
-    // INES Length validation
-    /*const allowedInesLengths = ["10m", "20m", "30m", "40m"];
-    if (!allowedInesLengths.includes(inesLength)) {
-      setMessage("Invalid INES Length. Allowed values are 10m or 20m.");
-      return;
-    }*/
 
     // Prizakia validation
     const allowedPrizakia = ["Oto Huawei", "Oto Classic"];
     if (!allowedPrizakia.includes(prizakia)) {
-      setMessage("Invalid Prizakia. Allowed values are Oto Huawei or Oto Classic.");
+      showTemporaryErrorMessage("❌ Invalid Prizakia. Allowed values are Oto Huawei or Oto Classic.");
       return;
     }
-
-    // Spiral Meters validation
-    /*const spiralMetersNumber = parseFloat(spiralMeters);
-    if (isNaN(spiralMetersNumber) || spiralMetersNumber < 1 || spiralMetersNumber > 100) {
-      setMessage("Spiral Meters must be a number between 1 and 100.");
-      return;
-    }*/
-
 
     // Prepare form data
     const formData = new FormData();
     formData.append("date", date);
     formData.append("address", address);
     formData.append("appointmentType", appointmentType);
-    formData.append("includeRouter", includeRouter); // Add whether router is included
+    formData.append("includeRouter", includeRouter);
     if (includeRouter) {
-      formData.append("routerSerial", routerSerial); // Add router serial number only if included
+      formData.append("routerSerial", routerSerial);
     }
-    formData.append("includeONT", includeONT); // Add whether ONT is included
+    formData.append("includeONT", includeONT);
     if (includeONT) {
-      formData.append("ontSerial", ontSerial); // Add ONT serial number only if included
+      formData.append("ontSerial", ontSerial);
     }
-    formData.append("includeSpiralMeters", includeSpiralMeters); // Add whether Spiral Meters is included
+    formData.append("includeSpiralMeters", includeSpiralMeters);
     if (includeSpiralMeters) {
-      formData.append("spiralMeters", spiralMeters); // Add Spiral Meters only if included
+      formData.append("spiralMeters", spiralMeters);
     }
     formData.append("inesLength", inesLength);
     formData.append("prizakia", prizakia);
     formData.append("notes", notes);
-    // Append each file to the form data
     for (const file of attachments) {
       formData.append("attachments", file);
     }
@@ -198,22 +189,26 @@ const App = () => {
       // Reset form fields
       setAddress("");
       setAppointmentType("");
-      setIncludeRouter(false); // Reset the router checkbox
-      setRouterSerial(""); // Reset the router serial number
-      setIncludeONT(false); // Reset the ONT checkbox
-      setOntSerial(""); // Reset the ONT serial number
-      setIncludeSpiralMeters(false); // Reset the Spiral Meters checkbox
-      setSpiralMeters(""); // Reset the Spiral Meters value
+      setIncludeRouter(false);
+      setRouterSerial("");
+      setIncludeONT(false);
+      setOntSerial("");
+      setIncludeSpiralMeters(false);
+      setSpiralMeters("");
       setInesLength("");
       setPrizakia("");
       setNotes("");
       setAttachments([]);
     } catch (error) {
-      setMessage("❌ Error submitting report.");
+      if (error.response && error.response.data && error.response.data.error) {
+        showTemporaryErrorMessage(`❌ ${error.response.data.error}`);
+      } else {
+        showTemporaryErrorMessage("❌ Error submitting report.");
+      }
     }
   };
 
-  // ✅ Handle Logout
+  // Handle Logout
   const handleLogout = () => {
     setToken(null);
     setRole("");
@@ -221,21 +216,14 @@ const App = () => {
     localStorage.removeItem("role");
   };
 
-  // ✅ Handle Multiple Selection for Materials
-  /*const handleMaterialChange = (e) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
-    console.log("Selected Materials:", selectedOptions); // ✅ Check if options are detected
-    setMaterials(selectedOptions);
-  };*/
-
-  // ✅ Check if user is already logged in (Token Persistence)
+  // Check if user is already logged in (Token Persistence)
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedRole = localStorage.getItem("role");
     if (savedToken) {
       setToken(savedToken);
       setRole(savedRole);
-      checkTokenExpiration()
+      checkTokenExpiration();
     }
   }, []);
 
@@ -286,6 +274,15 @@ const App = () => {
                   <Row className="mb-4">
                     <Col>
                       <Alert variant="success" onClose={() => setShowSuccessMessage(false)} dismissible>
+                        {message}
+                      </Alert>
+                    </Col>
+                  </Row>
+                )}
+                {showErrorMessage && (
+                  <Row className="mb-4">
+                    <Col>
+                      <Alert variant="danger" onClose={() => setShowErrorMessage(false)} dismissible>
                         {message}
                       </Alert>
                     </Col>
@@ -416,7 +413,7 @@ const App = () => {
                   </Form.Group>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>Notes:</Form.Label>
+                    <Form.Label>Notes: (Optional)</Form.Label>
                     <Form.Control
                       as="textarea"
                       rows={3}
