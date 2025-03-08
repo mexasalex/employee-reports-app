@@ -15,6 +15,7 @@ const AdminPanel = ({ token, onLogout }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [filteredReports, setFilteredReports] = useState([]); // Add this line
   const [filterAppointmentType, setFilterAppointmentType] = useState("");
   const [dateRange, setDateRange] = useState([null, null]);
   const [startDate, endDate] = dateRange;
@@ -22,7 +23,7 @@ const AdminPanel = ({ token, onLogout }) => {
   const [filterAddress, setFilterAddress] = useState("");
   const [filterEquipment, setFilterEquipment] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
-  const [employees, setEmployees] = useState([]);
+  //const [employees, setEmployees] = useState([]);
   const [totalSpiralMeters, setTotalSpiralMeters] = useState(0);
   const [totalOtoHuawei, setTotalOtoHuawei] = useState(0);
   const [totalOtoClassic, setTotalOtoClassic] = useState(0);
@@ -33,43 +34,26 @@ const AdminPanel = ({ token, onLogout }) => {
   const [rowLimit, setRowLimit] = useState(20); // Default limit is 20
 
   useEffect(() => {
-    const fetchReports = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/admin/reports", {
+        // Fetch all users
+        const usersResponse = await axios.get("http://localhost:5000/admin/users", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setReports(response.data);
+        setUsers(usersResponse.data);
+
+        // Fetch all reports
+        const reportsResponse = await axios.get("http://localhost:5000/admin/reports", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setReports(reportsResponse.data);
       } catch (error) {
-        console.error("Error fetching reports:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
-    const fetchUsers = async () => {
-      try {
-        const response = await axios.get("http://localhost:5000/admin/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUsers(response.data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
-
-    const fetchEmployees = async () => {
-      try {
-        const response = await axios.get("http://localhost:5000/admin/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setEmployees(response.data);
-      } catch (error) {
-        console.error("Error fetching employees:", error);
-      }
-    };
-
-    fetchEmployees();
-    fetchReports();
-    fetchUsers();
-  }, [token]); // Only `token` is included in the dependency array
+    fetchData();
+  }, [token]);
 
   const fetchUsersUpdateOnClick = async () => {
     try {
@@ -99,9 +83,17 @@ const AdminPanel = ({ token, onLogout }) => {
         }
       }
 
-      // Filter by employee
-      if (filterEmployee && report.name !== filterEmployee) {
-        return false;
+      // Filter by employee (use employee_name instead of name)
+      if (filterEmployee) {
+        const employeeName = report.employee_name || ""; // Use employee_name from reports
+
+        // Strip "(Deleted)" from the filterEmployee value for comparison
+        const filterEmployeeName = filterEmployee.replace(" (Deleted)", "");
+
+        // Compare the names without the "(Deleted)" marker
+        if (employeeName.replace(" (Deleted)", "") !== filterEmployeeName) {
+          return false;
+        }
       }
 
       // Filter by address
@@ -119,7 +111,8 @@ const AdminPanel = ({ token, onLogout }) => {
 
       return true;
     });
-
+    
+    setFilteredReports(filtered); // Update the state
     // Calculate router and ONT counts
     const { routerCount, ontCount } = calculateRouterAndONTCounts(filtered);
     setTotalRouters(routerCount);
@@ -131,11 +124,43 @@ const AdminPanel = ({ token, onLogout }) => {
     setTotalOtoClassic(otoClassicCount);
   }, [reports, filterAppointmentType, startDate, endDate, filterEmployee, filterAddress, filterEquipment]);
 
+  const getCombinedEmployeeList = () => {
+    // Extract all unique employee names from the reports table
+    const reportEmployeeNames = [...new Set(reports.map((report) => report.employee_name))];
+
+    // Create a list of active users from the users table
+    const activeUsers = users.map((user) => user.name);
+
+    // Combine the lists and mark deleted users
+    const combinedList = reportEmployeeNames.map((name) => {
+      // If the name already contains "(Deleted)", return it as is
+      if (name.includes("(Deleted)")) {
+        return name;
+      }
+
+      // If the name is not in the active users list, mark it as deleted
+      if (!activeUsers.includes(name)) {
+        return `${name} (Deleted)`;
+      }
+
+      // Otherwise, return the name as is
+      return name;
+    });
+
+    // Add active users who haven't submitted any reports yet
+    activeUsers.forEach((name) => {
+      if (!reportEmployeeNames.includes(name)) {
+        combinedList.push(name);
+      }
+    });
+
+    return combinedList;
+  };
+
   // Function to calculate total spiral meters
   const calculateTotalSpiralMeters = (filteredReports) => {
     let total = 0;
     filteredReports.forEach((report) => {
-      console.log("Spiral Meters:", report.spiral_meters); // Debugging line
       const spiralMeters = parseFloat(report.spiral_meters);
       if (!isNaN(spiralMeters)) {
         total += spiralMeters;
@@ -336,45 +361,6 @@ const AdminPanel = ({ token, onLogout }) => {
     doc.save("Employee_Reports.pdf");
   };
 
-  // Filter reports
-  const filteredReports = reports.filter((report) => {
-    // Filter by appointment type
-    if (filterAppointmentType && report.appointment_type !== filterAppointmentType) {
-      return false;
-    }
-
-
-    // Filter by date range
-    if (startDate && endDate) {
-      const reportDate = new Date(report.date).getTime();
-      const start = new Date(startDate).getTime();
-      const end = new Date(endDate).getTime();
-      if (reportDate < start || reportDate > end) {
-        return false;
-      }
-    }
-
-    // Filter by employee
-    if (filterEmployee && report.name !== filterEmployee) {
-      return false;
-    }
-
-    // Filter by address
-    if (filterAddress && !report.address.toLowerCase().includes(filterAddress.toLowerCase())) {
-      return false;
-    }
-
-    // Filter by equipment
-    if (filterEquipment === "router" && !report.router_serial) {
-      return false;
-    }
-    if (filterEquipment === "ont" && !report.ont_serial) {
-      return false;
-    }
-
-    return true;
-  });
-
   const limitedReports = filteredReports.slice(0, rowLimit);
 
   return (
@@ -535,14 +521,13 @@ const AdminPanel = ({ token, onLogout }) => {
                       onChange={(e) => setFilterEmployee(e.target.value)}
                     >
                       <option value="">All</option>
-                      {employees.map((employee) => (
-                        <option key={employee.id} value={employee.name}>
-                          {employee.name}
+                      {getCombinedEmployeeList().map((name, index) => (
+                        <option key={index} value={name}>
+                          {name}
                         </option>
                       ))}
                     </Form.Control>
                   </Form.Group>
-
                   <Form.Group className="mb-3">
                     <Form.Label>Address:</Form.Label>
                     <Form.Control
@@ -642,7 +627,7 @@ const AdminPanel = ({ token, onLogout }) => {
                   <tbody>
                     {limitedReports.map((report) => (
                       <tr key={report.id}>
-                        <td>{report.name}</td>
+                        <td>{report.employee_name}</td>
                         <td>{formatDate(report.date)}</td>
                         <td>{report.address}</td>
                         <td>{report.appointment_type}</td>

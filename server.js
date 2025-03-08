@@ -101,7 +101,12 @@ app.delete("/admin/delete-user/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Set user_id to NULL for all reports associated with the user
+    await pool.query("UPDATE reports SET user_id = NULL WHERE user_id = $1", [id]);
+
+    // Delete the user
     await pool.query("DELETE FROM users WHERE id = $1", [id]);
+
     res.json({ message: "Employee deleted successfully" });
   } catch (err) {
     console.error(err);
@@ -138,6 +143,10 @@ app.post("/submit-report", authenticateToken, upload.single("attachment"), async
   const userId = req.user.userId;
   const attachment = req.file ? req.file.filename : null;
 
+  // Fetch the employee's name
+  const user = await pool.query("SELECT name FROM users WHERE id = $1", [userId]);
+  const employeeName = user.rows[0].name;
+
   // Required fields validation
   if (!date || !address || !appointmentType || !inesLength || !prizakia) {
     return res.status(400).json({ error: "All fields are required." });
@@ -161,11 +170,12 @@ app.post("/submit-report", authenticateToken, upload.single("attachment"), async
   try {
     const newReport = await pool.query(
       `INSERT INTO reports 
-       (user_id, date, address, appointment_type, router_serial, ont_serial, ines_length, prizakia, spiral_meters, notes, attachment, created_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) 
+       (user_id, employee_name, date, address, appointment_type, router_serial, ont_serial, ines_length, prizakia, spiral_meters, notes, attachment, created_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) 
        RETURNING *`,
       [
         userId,
+        employeeName,
         date,
         address,
         appointmentType,
@@ -193,9 +203,26 @@ app.get("/admin/reports", authenticateToken, async (req, res) => {
 
   try {
     const reports = await pool.query(
-      "SELECT reports.id, users.name, reports.date, reports.address, reports.appointment_type, reports.router_serial, reports.ont_serial, reports.ines_length, reports.prizakia, reports.spiral_meters, reports.notes, reports.attachment, reports.created_at FROM reports JOIN users ON reports.user_id = users.id ORDER BY reports.date DESC"
+      `SELECT reports.id, users.name, reports.employee_name, reports.date, reports.address, reports.appointment_type, 
+              reports.router_serial, reports.ont_serial, reports.ines_length, reports.prizakia, 
+              reports.spiral_meters, reports.notes, reports.attachment, reports.created_at 
+       FROM reports 
+       LEFT JOIN users ON reports.user_id = users.id 
+       ORDER BY reports.date DESC`
     );
-    res.json(reports.rows);
+
+    // Add (Deleted) marker to employee_name if the user is deleted
+    const reportsWithDeletedMarker = reports.rows.map((report) => {
+      if (report.name === null) { // If the user is deleted, users.name will be NULL
+        return {
+          ...report,
+          employee_name: `${report.employee_name} (Deleted)`,
+        };
+      }
+      return report;
+    });
+
+    res.json(reportsWithDeletedMarker);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error fetching reports" });
