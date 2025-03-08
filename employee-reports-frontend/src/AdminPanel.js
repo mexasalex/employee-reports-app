@@ -14,7 +14,11 @@ const AdminPanel = ({ token, onLogout }) => {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  //const [message, setMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState(""); // State for success message
+  const [errorMessage, setErrorMessage] = useState(""); // State for error message
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false); // State for success message visibility
+  const [showErrorMessage, setShowErrorMessage] = useState(false); // State for error message visibility
   const [filteredReports, setFilteredReports] = useState([]); // Add this line
   const [filterAppointmentType, setFilterAppointmentType] = useState("");
   const [dateRange, setDateRange] = useState([null, null]);
@@ -56,6 +60,27 @@ const AdminPanel = ({ token, onLogout }) => {
 
     fetchData();
   }, [token]);
+
+
+  // Function to show temporary success message
+  const showTemporarySuccessMessage = (message) => {
+    setSuccessMessage(message);
+    setShowSuccessMessage(true);
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+      setSuccessMessage("");
+    }, 3000); // Hide after 3 seconds
+  };
+
+  // Function to show temporary error message
+  const showTemporaryErrorMessage = (message) => {
+    setErrorMessage(message);
+    setShowErrorMessage(true);
+    setTimeout(() => {
+      setShowErrorMessage(false);
+      setErrorMessage("");
+    }, 3000); // Hide after 3 seconds
+  };
 
   const fetchUsersUpdateOnClick = async () => {
     try {
@@ -130,36 +155,36 @@ const AdminPanel = ({ token, onLogout }) => {
   const getCombinedEmployeeList = () => {
     // Extract all unique employee names from the reports table
     const reportEmployeeNames = [...new Set(reports.map((report) => report.employee_name || ""))];
-  
+
     // Create a list of active users from the users table
     const activeUsers = users.map((user) => user.name);
-  
+
     // Combine the lists and mark deleted users
     const combinedList = reportEmployeeNames.map((name) => {
       // If the name is null or empty, skip it
       if (!name) return "";
-  
+
       // If the name already contains "(Deleted)", return it as is
       if (name.includes("(Deleted)")) {
         return name;
       }
-  
+
       // If the name is not in the active users list, mark it as deleted
       if (!activeUsers.includes(name)) {
         return `${name} (Deleted)`;
       }
-  
+
       // Otherwise, return the name as is
       return name;
     });
-  
+
     // Add active users who haven't submitted any reports yet
     activeUsers.forEach((name) => {
       if (!reportEmployeeNames.includes(name)) {
         combinedList.push(name);
       }
     });
-  
+
     // Filter out empty strings (null or undefined names)
     return combinedList.filter((name) => name !== "");
   };
@@ -218,13 +243,13 @@ const AdminPanel = ({ token, onLogout }) => {
         { name, username, password },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessage("✅ Employee created successfully!");
+      showTemporarySuccessMessage("✅ Employee created successfully!");
       setName("");
       setUsername("");
       setPassword("");
       fetchUsersUpdateOnClick();
     } catch (error) {
-      setMessage("❌ Error creating employee.");
+      showTemporaryErrorMessage("❌ Error creating employee.");
     }
   };
 
@@ -255,9 +280,9 @@ const AdminPanel = ({ token, onLogout }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(users.filter((user) => user.id !== id));
-      setMessage("✅ Employee deleted.");
+      showTemporarySuccessMessage("✅ Employee deleted.");
     } catch (error) {
-      setMessage("❌ Error deleting employee.");
+      showTemporaryErrorMessage("❌ Error deleting employee.");
     }
   };
 
@@ -268,9 +293,9 @@ const AdminPanel = ({ token, onLogout }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setReports(reports.filter((report) => report.id !== id));
-      setMessage("✅ Report deleted.");
+      showTemporarySuccessMessage("✅ Report deleted.");
     } catch (error) {
-      setMessage("❌ Error deleting report.");
+      showTemporaryErrorMessage("❌ Error deleting report.");
     }
   };
 
@@ -401,6 +426,27 @@ const AdminPanel = ({ token, onLogout }) => {
           </Button>
         </Col>
       </Row>
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <Row className="mb-4">
+          <Col>
+            <Alert variant="success" onClose={() => setShowSuccessMessage(false)} dismissible>
+              {successMessage}
+            </Alert>
+          </Col>
+        </Row>
+      )}
+
+      {/* Error Message */}
+      {showErrorMessage && (
+        <Row className="mb-4">
+          <Col>
+            <Alert variant="danger" onClose={() => setShowErrorMessage(false)} dismissible>
+              {errorMessage}
+            </Alert>
+          </Col>
+        </Row>
+      )}
       {/* Confirmation Modal */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
         <Modal.Header closeButton>
@@ -436,13 +482,6 @@ const AdminPanel = ({ token, onLogout }) => {
         </Col>
       </Row>
 
-      {message && (
-        <Row className="mb-4">
-          <Col>
-            <Alert variant={message.startsWith("✅") ? "success" : "danger"}>{message}</Alert>
-          </Col>
-        </Row>
-      )}
 
       {showCreateEmployeeForm && (
         <Row className="mb-4">
